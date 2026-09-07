@@ -118,15 +118,17 @@ export async function findExerciseMedia({ id, name } = {}) {
 
 function localMediaFor({ id, name } = {}) {
   const value = `${id || ''} ${name || ''}`.toLowerCase()
-  let file = 'machine-row-real.png'
-  if (/bench|chest|fly|push.?up|dip/.test(value)) file = /push.?up/.test(value) ? 'pushup-real.png' : 'chest-press-real.png'
-  else if (/shoulder|overhead|lateral|front.?raise|arnold|press/.test(value)) file = 'overhead-press-real.png'
-  else if (/deadlift|rdl|hinge|good.?morning/.test(value)) file = 'deadlift-real.png'
-  else if (/squat|lunge|leg|calf|glute|hamstring/.test(value)) file = 'squat-real.png'
-  else if (/plank|crunch|sit.?up|ab|mountain/.test(value)) file = 'pushup-real.png'
+  let startFile = 'row-start-real.png'
+  let endFile = 'row-finish-real.png'
+  if (/bench|chest|fly|dip/.test(value)) { startFile = 'press-start-real.png'; endFile = 'press-finish-real.png' }
+  else if (/push.?up/.test(value)) { startFile = 'pushup-real.png'; endFile = 'pushup-real.png' }
+  else if (/shoulder|overhead|lateral|front.?raise|arnold|press/.test(value)) { startFile = 'overhead-press-real.png'; endFile = 'overhead-press-real.png' }
+  else if (/deadlift|rdl|hinge|good.?morning/.test(value)) { startFile = 'deadlift-real.png'; endFile = 'deadlift-real.png' }
+  else if (/squat|lunge|leg|calf|glute|hamstring/.test(value)) { startFile = 'squat-start-real.png'; endFile = 'squat-finish-real.png' }
+  else if (/plank|crunch|sit.?up|ab|mountain/.test(value)) { startFile = 'pushup-real.png'; endFile = 'pushup-real.png' }
   return {
-    imageUrlStart: `/exercise-images/${file}`,
-    imageUrlEnd: `/exercise-images/${file}`,
+    imageUrlStart: `/exercise-images/${startFile}`,
+    imageUrlEnd: `/exercise-images/${endFile}`,
     imageUrl: `/exercise-images/${file}`,
     source: 'ForgeFit realistic gym photo'
   }
