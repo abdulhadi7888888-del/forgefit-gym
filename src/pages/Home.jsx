@@ -6,6 +6,7 @@ import { updatePlan } from '../lib/customData'
 import { generatePlan, todaysWorkout, getProgramDay, durationLabel } from '../lib/planGenerator'
 import { exercises } from '../data/exercises'
 import TabBar from '../components/TabBar'
+import { findExerciseMedia } from '../lib/exerciseMedia'
 
 function dateKeyDaysAgo(n) {
   const d = new Date(); d.setDate(d.getDate() - n)
@@ -23,6 +24,7 @@ export default function Home() {
   const [error, setError] = useState(null)
   const [retryCount, setRetryCount] = useState(0)
   const [startingNew, setStartingNew] = useState(false)
+  const [previewImage, setPreviewImage] = useState(null)
 
   useEffect(() => {
     async function load() {
@@ -51,6 +53,19 @@ export default function Home() {
     }
     if (user && profile) load()
   }, [user, profile, retryCount])
+
+  useEffect(() => {
+    let cancelled = false
+    const first = today?.exerciseIds?.[0]
+    if (!first) {
+      setPreviewImage(null)
+      return undefined
+    }
+    findExerciseMedia({ id: first.exerciseId, name: first.name }).then(media => {
+      if (!cancelled) setPreviewImage(media?.imageUrlStart || media?.imageUrl || null)
+    })
+    return () => { cancelled = true }
+  }, [today])
 
   async function createAndSaveProgram() {
     const generated = generatePlan({
@@ -144,6 +159,11 @@ export default function Home() {
               </div>
               <div style={{ fontSize: 32 }}>{canStartToday ? '🏋️' : '😴'}</div>
             </div>
+            {canStartToday && previewImage && (
+              <div className="home-exercise-preview">
+                <img src={previewImage} alt={today.exerciseIds[0]?.name || 'Today exercise'} />
+              </div>
+            )}
             {canStartToday && (
               <button className="primary" onClick={() => nav('/workout', { state: { day: today, planId: plan.id } })}>
                 START WORKOUT

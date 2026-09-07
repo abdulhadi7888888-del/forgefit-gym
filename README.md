@@ -81,3 +81,7 @@ For subscriptions, also add a Capacitor in-app-purchase plugin (e.g. `@capacitor
 - Equipment and difficulty filters
 - Per-exercise form instructions
 - Media remains optional and should be uploaded/licensed by the app owner
+
+
+### Exercise media attribution
+Exercise images are loaded from the RepDB free exercise dataset for in-app use. Attribution: **Exercise data by RepDB (repdb.co)**.

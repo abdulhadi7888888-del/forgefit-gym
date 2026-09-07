@@ -1,49 +1,88 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { findExerciseMedia } from '../lib/exerciseMedia'
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
-// Two-image step demo (start position / end position), shown side by side —
-// this is what covers an exercise when no video exists yet, which today is
-// almost every exercise in the library. Falls back gracefully: if only one
-// of the two images is set, show just that one full-width; if a legacy
-// single `imageUrl` is set instead (old data shape), show that; if nothing
-// at all, show the empty state.
-function StepImages({ imageUrlStart, imageUrlEnd, imageUrl, alt }) {
-  if (imageUrlStart && imageUrlEnd) {
+function StepImage({ src, alt, label }) {
+  const [failed, setFailed] = useState(false)
+
+  if (!src || failed) {
     return (
-      <div className="row" style={{ gap: 8, alignItems: 'stretch' }}>
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          <img src={imageUrlStart} alt={`${alt} — start position`} style={{ width: '100%', borderRadius: 14, display: 'block' }} />
-          <p className="muted" style={{ margin: '6px 0 0', fontSize: 12 }}>STEP 1 · START</p>
-        </div>
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          <img src={imageUrlEnd} alt={`${alt} — end position`} style={{ width: '100%', borderRadius: 14, display: 'block' }} />
-          <p className="muted" style={{ margin: '6px 0 0', fontSize: 12 }}>STEP 2 · FINISH</p>
-        </div>
+      <div className="exercise-step exercise-step-empty">
+        <div className="exercise-placeholder">{alt.slice(0, 1).toUpperCase()}</div>
+        <p>{label}</p>
       </div>
     )
   }
 
-  const single = imageUrlStart || imageUrlEnd || imageUrl
-  if (single) return <img src={single} alt={alt} style={{ width: '100%', borderRadius: 18 }} />
-
   return (
-    <div className="card" style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 40 }}>💪</div>
-      <p className="muted">No demonstration media uploaded yet for this exercise.</p>
+    <div className="exercise-step">
+      <div className="exercise-visual">
+        <img
+          src={src}
+          alt={`${alt} — ${label.toLowerCase()}`}
+          loading="eager"
+          onError={() => setFailed(true)}
+        />
+      </div>
+      <p>{label}</p>
     </div>
   )
 }
 
-export default function ExerciseMedia({ imageUrl, imageUrlStart, imageUrlEnd, videoUrl, alt }) {
+function StepImages({ imageUrlStart, imageUrlEnd, imageUrl, alt }) {
+  if (imageUrlStart || imageUrlEnd) {
+    return (
+      <section className="exercise-demo" aria-label={`${alt} demonstration`}>
+        <div className="exercise-steps">
+          <StepImage src={imageUrlStart || imageUrl} alt={alt} label="STEP 1 · START" />
+          <StepImage src={imageUrlEnd || imageUrlStart || imageUrl} alt={alt} label="STEP 2 · FINISH" />
+        </div>
+      </section>
+    )
+  }
+
+  if (imageUrl) {
+    return (
+      <section className="exercise-demo" aria-label={`${alt} demonstration`}>
+        <div className="exercise-single">
+          <StepImage src={imageUrl} alt={alt} label="EXERCISE" />
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section className="exercise-demo exercise-demo-empty">
+      <div className="exercise-placeholder">{alt.slice(0, 1).toUpperCase()}</div>
+      <p className="muted">Exercise demonstration is being prepared.</p>
+    </section>
+  )
+}
+
+export default function ExerciseMedia({ imageUrl, imageUrlStart, imageUrlEnd, videoUrl, alt, exerciseId }) {
   const videoRef = useRef(null)
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
   const [muted, setMuted] = useState(true)
   const [progress, setProgress] = useState(0)
+  const [remoteMedia, setRemoteMedia] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    if (imageUrl || imageUrlStart || imageUrlEnd || videoUrl || !alt) return undefined
+    findExerciseMedia({ id: exerciseId, name: alt }).then(media => {
+      if (!cancelled) setRemoteMedia(media)
+    })
+    return () => { cancelled = true }
+  }, [alt, exerciseId, imageUrl, imageUrlStart, imageUrlEnd, videoUrl])
+
+  const resolvedImage = imageUrl || remoteMedia?.imageUrl
+  const resolvedStart = imageUrlStart || remoteMedia?.imageUrlStart
+  const resolvedEnd = imageUrlEnd || remoteMedia?.imageUrlEnd
 
   if (!videoUrl) {
-    return <StepImages imageUrlStart={imageUrlStart} imageUrlEnd={imageUrlEnd} imageUrl={imageUrl} alt={alt} />
+    return <StepImages imageUrlStart={resolvedStart} imageUrlEnd={resolvedEnd} imageUrl={resolvedImage} alt={alt} />
   }
 
   function togglePlay() {
@@ -74,13 +113,14 @@ export default function ExerciseMedia({ imageUrl, imageUrlStart, imageUrlEnd, vi
   }
 
   return (
-    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+    <div className="exercise-video card" style={{ padding: 0, overflow: 'hidden' }}>
       <video
         ref={videoRef}
         src={videoUrl}
         poster={imageUrl}
         muted={muted}
         loop
+        playsInline
         onTimeUpdate={onTimeUpdate}
         onClick={togglePlay}
         style={{ width: '100%', display: 'block', borderRadius: '22px 22px 0 0' }}

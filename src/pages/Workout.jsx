@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { startSession, logSet, finishSession } from '../lib/data'
 import { track } from '../lib/analytics'
+import ExerciseMedia from '../components/ExerciseMedia'
 
 const FEELINGS = [
   { id: 'bad', emoji: '😫' }, { id: 'normal', emoji: '😐' },
@@ -119,6 +120,15 @@ export default function Workout() {
         <div className="eyebrow">EXERCISE {exerciseIndex + 1} / {day.exerciseIds.length}</div>
         <h2>{currentExercise.name}</h2>
         <p className="muted">Target: {currentExercise.repRange} reps • Rest {currentExercise.restSeconds}s</p>
+
+        <ExerciseMedia
+          exerciseId={currentExercise.exerciseId}
+          alt={currentExercise.name}
+          imageUrl={currentExercise.imageUrl}
+          imageUrlStart={currentExercise.imageUrlStart}
+          imageUrlEnd={currentExercise.imageUrlEnd}
+          videoUrl={currentExercise.videoUrl}
+        />
         {currentExercise.progressionNote && (
           <p className="muted" style={{ marginTop: -8 }}>💡 {currentExercise.progressionNote}</p>
         )}

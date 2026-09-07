@@ -48,8 +48,14 @@ export default function ExerciseDetail() {
     setFavId(newId)
   }
 
-  const exercise = liveExercise || staticExercise
-  if (!exercise) return <div className="app"><main><p>Exercise not found.</p></main></div>
+  // Keep the local exercise definition as the baseline so every exercise
+  // retains its default start/end demonstration even when Firebase only
+  // overrides text, sets, or other fields.
+  if (!staticExercise && !liveExercise) return <div className="app"><main><p>Exercise not found.</p></main></div>
+  const exercise = { ...(staticExercise || {}), ...(liveExercise || {}) }
+  exercise.imageUrl = liveExercise?.imageUrl || staticExercise?.imageUrl || null
+  exercise.imageUrlStart = liveExercise?.imageUrlStart || staticExercise?.imageUrlStart || null
+  exercise.imageUrlEnd = liveExercise?.imageUrlEnd || staticExercise?.imageUrlEnd || null
 
   // Instructions can arrive either as a `steps` array (custom/admin-authored
   // exercises) or an `instructions` array (older shape) — normalize to one list.
@@ -63,7 +69,6 @@ export default function ExerciseDetail() {
         <button className="secondary" onClick={handleFavorite}>{favId ? '★ Saved' : '☆ Save'}</button>
       </header>
       <main>
-        <div className="eyebrow">{exercise.primaryMuscle.toUpperCase()}</div>
         <h1>{exercise.name}</h1>
 
         <ExerciseMedia
@@ -72,6 +77,7 @@ export default function ExerciseDetail() {
           imageUrlEnd={exercise.imageUrlEnd}
           videoUrl={exercise.videoUrl}
           alt={exercise.name}
+          exerciseId={slug}
         />
 
         <div className="chips">

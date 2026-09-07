@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { exercises, muscleGroups } from '../data/exercises'
 import { track } from '../lib/analytics'
@@ -50,7 +50,7 @@ export default function Exercises() {
           {filtered.length === 0 && <p className="muted">No exercises found.</p>}
           {filtered.map(e => (
             <div key={e.slug} className="exercise" onClick={() => { track('exercise_viewed', { exercise: e.slug }); nav(`/exercises/${e.slug}`) }}>
-              <div className="thumb">💪</div>
+              <ExerciseThumb exercise={e} />
               <div style={{ flex: 1 }}>
                 <h3>{e.name}</h3>
                 <p>{e.primaryMuscle} • {e.equipment}</p>
@@ -59,8 +59,28 @@ export default function Exercises() {
             </div>
           ))}
         </div>
+        <p className="muted exercise-credit">Exercise data by <a href="https://repdb.co" target="_blank" rel="noreferrer">RepDB</a>.</p>
       </main>
       <TabBar active="exercises" />
     </div>
   )
+}
+
+
+function ExerciseThumb({ exercise }) {
+  const [src, setSrc] = useState(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    import('../lib/exerciseMedia').then(({ findExerciseMedia }) =>
+      findExerciseMedia({ id: exercise.slug, name: exercise.name }).then(media => {
+        if (!cancelled && media) setSrc(media.imageUrlStart || media.imageUrl)
+      })
+    )
+    return () => { cancelled = true }
+  }, [exercise.slug, exercise.name])
+
+  if (!src || failed) return <div className="thumb">{exercise.name.slice(0, 1)}</div>
+  return <div className="thumb thumb-image"><img src={src} alt="" loading="lazy" onError={() => setFailed(true)} /></div>
 }
