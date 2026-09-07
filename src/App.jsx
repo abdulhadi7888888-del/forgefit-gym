@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Login from './pages/Login'
@@ -36,7 +36,29 @@ const AdminNotifications = lazy(() => import('./pages/admin/AdminNotifications')
 const AdminActivateSubscription = lazy(() => import('./pages/admin/AdminActivateSubscription'))
 
 function PageFallback() {
-  return <div className="app"><main><p className="muted">Loading…</p></main></div>
+  const [timedOut, setTimedOut] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setTimedOut(true), 10000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  return (
+    <div className="app">
+      <main>
+        <p className="muted">
+          {timedOut
+            ? 'This page is taking too long to load.'
+            : 'Loading…'}
+        </p>
+        {timedOut && (
+          <button className="primary" onClick={() => window.location.reload()}>
+            RELOAD PAGE
+          </button>
+        )}
+      </main>
+    </div>
+  )
 }
 
 export default function App() {

@@ -66,7 +66,7 @@ export default function ExerciseDetail() {
     <div className="app">
       <header>
         <button className="secondary" onClick={() => nav(-1)}>← Back</button>
-        <button className="secondary" onClick={handleFavorite}>{favId ? '★ Saved' : '☆ Save'}</button>
+        <button className="secondary" onClick={handleFavorite}>{favId ? 'Saved' : 'Save'}</button>
       </header>
       <main>
         <h1>{exercise.name}</h1>

@@ -81,6 +81,7 @@ function ExerciseThumb({ exercise }) {
     return () => { cancelled = true }
   }, [exercise.slug, exercise.name])
 
-  if (!src || failed) return <div className="thumb">{exercise.name.slice(0, 1)}</div>
-  return <div className="thumb thumb-image"><img src={src} alt="" loading="lazy" onError={() => setFailed(true)} /></div>
+  const localSrc = exercise.imageUrlStart || exercise.imageUrl || null
+  if ((!src || failed) && !localSrc) return <div className="thumb thumb-empty">VIEW</div>
+  return <div className="thumb thumb-image"><img src={src || localSrc} alt={`${exercise.name} demonstration`} loading="lazy" onError={() => setFailed(true)} /></div>
 }

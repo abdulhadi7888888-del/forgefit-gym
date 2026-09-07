@@ -27,31 +27,97 @@ export default function Home() {
   const [previewImage, setPreviewImage] = useState(null)
 
   useEffect(() => {
+    let cancelled = false
+
     async function load() {
       setLoading(true)
       setError(null)
+
+      // Never leave the dashboard stuck forever when Firestore/network is
+      // unavailable. Firestore reads do not expose an AbortSignal, so a
+      // timeout lets the UI recover while the SDK can continue its own retry.
+      const withTimeout = (promise, ms = 10000) => Promise.race([
+        promise,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Dashboard data is taking too long to load. Please check your internet connection and try again.')), ms)
+        )
+      ])
+
       try {
-        let p = await getActivePlan(user.uid)
-        if (!p && profile) {
-          p = await createAndSaveProgram()
+        let p = null
+
+        try {
+          p = await withTimeout(getActivePlan(user.uid))
+          if (!p && profile) {
+            // Generate the workout locally first so the dashboard can always
+            // open. Save it when Firestore is reachable.
+            const generated = generatePlan({
+              daysPerWeek: profile.trainingFrequency || 3,
+              equipment: profile.equipment || [],
+              exerciseLibrary: exercises,
+              fitnessLevel: profile.fitnessLevel || 'beginner',
+              durationDays: profile.programDurationDays || 90
+            })
+            p = { id: null, ...generated }
+
+            if (navigator.onLine) {
+              try {
+                const id = await withTimeout(savePlan(user.uid, generated), 8000)
+                p.id = id
+              } catch (saveErr) {
+                console.warn('Could not save generated plan yet; using local plan.', saveErr)
+              }
+            }
+          }
+        } catch (planErr) {
+          console.warn('Active plan could not be loaded; using a local workout plan.', planErr)
+          if (profile) {
+            const generated = generatePlan({
+              daysPerWeek: profile.trainingFrequency || 3,
+              equipment: profile.equipment || [],
+              exerciseLibrary: exercises,
+              fitnessLevel: profile.fitnessLevel || 'beginner',
+              durationDays: profile.programDurationDays || 90
+            })
+            p = { id: null, ...generated }
+          }
         }
+
+        if (cancelled) return
+
         setPlan(p)
         setToday(todaysWorkout(p))
 
-        const [logData, sessionData] = await Promise.all([
-          getLogsSince(user.uid, dateKeyDaysAgo(7)),
-          getRecentSessions(user.uid, 5)
+        // Stats are useful but must never block the dashboard itself. If one
+        // Firestore query fails/offline, show the dashboard with empty stats.
+        const [logsResult, sessionsResult] = await Promise.allSettled([
+          withTimeout(getLogsSince(user.uid, dateKeyDaysAgo(7))),
+          withTimeout(getRecentSessions(user.uid, 5))
         ])
-        setLogs(logData)
-        setSessions(sessionData)
+
+        if (cancelled) return
+
+        setLogs(logsResult.status === 'fulfilled' ? logsResult.value : [])
+        setSessions(sessionsResult.status === 'fulfilled' ? sessionsResult.value : [])
+
+        if (logsResult.status === 'rejected' || sessionsResult.status === 'rejected') {
+          console.warn('Some dashboard stats could not be loaded.', {
+            logs: logsResult.reason,
+            sessions: sessionsResult.reason
+          })
+        }
       } catch (err) {
-        console.error('Home dashboard failed to load:', err)
-        setError(err?.message || 'Something went wrong while loading your dashboard.')
+        if (!cancelled) {
+          console.error('Home dashboard failed to load:', err)
+          setError(err?.message || 'Something went wrong while loading your dashboard.')
+        }
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
+
     if (user && profile) load()
+    return () => { cancelled = true }
   }, [user, profile, retryCount])
 
   useEffect(() => {
@@ -139,7 +205,7 @@ export default function Home() {
         {programComplete ? (
           <div className="card today">
             <div className="eyebrow">{durationLabel(totalDays).toUpperCase()} PROGRAM COMPLETE</div>
-            <h2 style={{ margin: '7px 0 4px' }}>Nice work. 🎉</h2>
+            <h2 style={{ margin: '7px 0 4px' }}>Nice work.</h2>
             <div className="muted">Start a fresh {durationLabel(totalDays).toLowerCase()} program to keep training.</div>
             <button className="primary" disabled={startingNew} onClick={startNewProgram}>
               {startingNew ? 'STARTING…' : `START NEW ${durationLabel(totalDays).toUpperCase()} PROGRAM`}
@@ -174,7 +240,7 @@ export default function Home() {
 
         <div className="stats">
           <div className="stat"><span className="muted">Workouts</span><b>{workoutsThisWeek}</b><small className="muted">this week</small></div>
-          <div className="stat"><span className="muted">Streak</span><b>{streak} 🔥</b><small className="muted">days</small></div>
+          <div className="stat"><span className="muted">Streak</span><b>{streak}</b><small className="muted">days</small></div>
           <div className="stat"><span className="muted">Volume</span><b>{Math.round(totalVolume).toLocaleString()}</b><small className="muted">kg, 7 days</small></div>
           <div className="stat"><span className="muted">Workouts</span><b>{sessions.length}</b><small className="muted">completed total</small></div>
         </div>

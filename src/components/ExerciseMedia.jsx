@@ -3,13 +3,22 @@ import { findExerciseMedia } from '../lib/exerciseMedia'
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
-function StepImage({ src, alt, label }) {
-  const [failed, setFailed] = useState(false)
+function StepImage({ src, fallbackSrc, alt, label }) {
+  const [currentSrc, setCurrentSrc] = useState(src || fallbackSrc || null)
 
-  if (!src || failed) {
+  useEffect(() => {
+    setCurrentSrc(src || fallbackSrc || null)
+  }, [src, fallbackSrc])
+
+  function handleError() {
+    if (fallbackSrc && currentSrc !== fallbackSrc) setCurrentSrc(fallbackSrc)
+    else setCurrentSrc(null)
+  }
+
+  if (!currentSrc) {
     return (
       <div className="exercise-step exercise-step-empty">
-        <div className="exercise-placeholder">{alt.slice(0, 1).toUpperCase()}</div>
+        <div className="exercise-placeholder">DEMO IMAGE</div>
         <p>{label}</p>
       </div>
     )
@@ -19,10 +28,10 @@ function StepImage({ src, alt, label }) {
     <div className="exercise-step">
       <div className="exercise-visual">
         <img
-          src={src}
+          src={currentSrc}
           alt={`${alt} — ${label.toLowerCase()}`}
           loading="eager"
-          onError={() => setFailed(true)}
+          onError={handleError}
         />
       </div>
       <p>{label}</p>
@@ -30,13 +39,18 @@ function StepImage({ src, alt, label }) {
   )
 }
 
-function StepImages({ imageUrlStart, imageUrlEnd, imageUrl, alt }) {
-  if (imageUrlStart || imageUrlEnd) {
+function StepImages({ imageUrlStart, imageUrlEnd, imageUrl, remoteStart, remoteEnd, remoteImage, alt }) {
+  const fallbackStart = imageUrlStart || imageUrl || remoteStart || remoteImage
+  const fallbackEnd = imageUrlEnd || imageUrlStart || imageUrl || remoteEnd || remoteStart || remoteImage
+  const start = remoteStart || remoteImage || imageUrlStart || imageUrl
+  const end = remoteEnd || remoteStart || remoteImage || imageUrlEnd || imageUrlStart || imageUrl
+
+  if (start || end) {
     return (
       <section className="exercise-demo" aria-label={`${alt} demonstration`}>
         <div className="exercise-steps">
-          <StepImage src={imageUrlStart || imageUrl} alt={alt} label="STEP 1 · START" />
-          <StepImage src={imageUrlEnd || imageUrlStart || imageUrl} alt={alt} label="STEP 2 · FINISH" />
+          <StepImage src={start} fallbackSrc={fallbackStart} alt={alt} label="STEP 1 · START" />
+          <StepImage src={end} fallbackSrc={fallbackEnd} alt={alt} label="STEP 2 · FINISH" />
         </div>
       </section>
     )
@@ -70,19 +84,29 @@ export default function ExerciseMedia({ imageUrl, imageUrlStart, imageUrlEnd, vi
 
   useEffect(() => {
     let cancelled = false
-    if (imageUrl || imageUrlStart || imageUrlEnd || videoUrl || !alt) return undefined
+    if (!alt || videoUrl) return undefined
+    // Prefer the real RepDB exercise image when available, but keep the local
+    // bundled illustration as an immediate offline fallback.
     findExerciseMedia({ id: exerciseId, name: alt }).then(media => {
-      if (!cancelled) setRemoteMedia(media)
+      if (!cancelled && media) setRemoteMedia(media)
     })
     return () => { cancelled = true }
-  }, [alt, exerciseId, imageUrl, imageUrlStart, imageUrlEnd, videoUrl])
+  }, [alt, exerciseId, videoUrl])
 
-  const resolvedImage = imageUrl || remoteMedia?.imageUrl
-  const resolvedStart = imageUrlStart || remoteMedia?.imageUrlStart
-  const resolvedEnd = imageUrlEnd || remoteMedia?.imageUrlEnd
+  const resolvedImage = remoteMedia?.imageUrl || imageUrl
+  const resolvedStart = remoteMedia?.imageUrlStart || imageUrlStart
+  const resolvedEnd = remoteMedia?.imageUrlEnd || imageUrlEnd
 
   if (!videoUrl) {
-    return <StepImages imageUrlStart={resolvedStart} imageUrlEnd={resolvedEnd} imageUrl={resolvedImage} alt={alt} />
+    return <StepImages
+      imageUrlStart={imageUrlStart}
+      imageUrlEnd={imageUrlEnd}
+      imageUrl={imageUrl}
+      remoteStart={remoteMedia?.imageUrlStart}
+      remoteEnd={remoteMedia?.imageUrlEnd}
+      remoteImage={remoteMedia?.imageUrl}
+      alt={alt}
+    />
   }
 
   function togglePlay() {

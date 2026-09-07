@@ -6,8 +6,8 @@ import { track } from '../lib/analytics'
 import ExerciseMedia from '../components/ExerciseMedia'
 
 const FEELINGS = [
-  { id: 'bad', emoji: '😫' }, { id: 'normal', emoji: '😐' },
-  { id: 'good', emoji: '🙂' }, { id: 'excellent', emoji: '🔥' }
+  { id: 'bad', label: 'Bad' }, { id: 'normal', label: 'Normal' },
+  { id: 'good', label: 'Good' }, { id: 'excellent', label: 'Excellent' }
 ]
 
 export default function Workout() {
@@ -95,7 +95,7 @@ export default function Workout() {
               {FEELINGS.map(f => (
                 <button key={f.id} onClick={() => setFeeling(f.id)}
                   style={{ background: 'none', border: feeling === f.id ? '2px solid var(--accent)' : '2px solid transparent', borderRadius: 12, padding: 6 }}>
-                  {f.emoji}
+                  {f.label}
                 </button>
               ))}
             </div>
@@ -130,7 +130,7 @@ export default function Workout() {
           videoUrl={currentExercise.videoUrl}
         />
         {currentExercise.progressionNote && (
-          <p className="muted" style={{ marginTop: -8 }}>💡 {currentExercise.progressionNote}</p>
+          <p className="muted progression-note" style={{ marginTop: -8 }}>{currentExercise.progressionNote}</p>
         )}
 
         {restSeconds > 0 && (
@@ -141,9 +141,20 @@ export default function Workout() {
           </div>
         )}
 
+        <div className="workout-target card">
+          <div className="eyebrow">WORKING TARGET</div>
+          <h3>{currentExercise.sets || 4} SETS × {currentExercise.repRange || '8-12'} REPS</h3>
+          <p className="muted">Use a weight you can control for the full rep range while keeping 1–2 good reps in reserve.</p>
+          <div className="target-grid">
+            <div><span className="muted">WEIGHT</span><b>KG</b><small>Choose your working weight</small></div>
+            <div><span className="muted">REPS</span><b>{currentExercise.repRange || '8-12'}</b><small>Per set</small></div>
+            <div><span className="muted">REST</span><b>{currentExercise.restSeconds || 60}s</b><small>Between sets</small></div>
+          </div>
+        </div>
+
         <div className="card">
           <div className="sets">
-            <b>#</b><b>KG</b><b>REPS</b><b>✓</b>
+            <b>SET</b><b>WEIGHT (KG)</b><b>REPS</b><b>DONE</b>
             {sets.map((s, i) => (
               <FragmentRow key={i} i={i} s={s} onW={v => updateSet(i, 'w', v)} onR={v => updateSet(i, 'r', v)} onComplete={() => completeSet(i)} />
             ))}
@@ -163,9 +174,9 @@ function FragmentRow({ i, s, onW, onR, onComplete }) {
   return (
     <>
       <span>{i + 1}</span>
-      <input type="number" value={s.w} placeholder="0" onChange={e => onW(e.target.value)} disabled={s.done} />
-      <input type="number" value={s.r} placeholder="0" onChange={e => onR(e.target.value)} disabled={s.done} />
-      <button onClick={onComplete} disabled={s.done}>{s.done ? '✓' : '○'}</button>
+      <input type="number" value={s.w} placeholder="e.g. 20" onChange={e => onW(e.target.value)} disabled={s.done} />
+      <input type="number" value={s.r} placeholder="e.g. 8" onChange={e => onR(e.target.value)} disabled={s.done} />
+      <button onClick={onComplete} disabled={s.done}>{s.done ? 'DONE' : 'LOG'}</button>
     </>
   )
 }
