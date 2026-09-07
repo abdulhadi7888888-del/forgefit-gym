@@ -3,6 +3,7 @@ import {
   query, where, orderBy, serverTimestamp, increment
 } from 'firebase/firestore'
 import { db } from './firebase'
+import { trackedWrite, stampForWrite } from './offline'
 
 export async function saveOnboarding(uid, data) {
   await setDoc(doc(db, 'profiles', uid), { ...data, onboardingComplete: true }, { merge: true })
@@ -46,14 +47,14 @@ export async function startSession(uid, dayName, planId) {
 export async function logSet(uid, sessionId, { exerciseId, exerciseName, setNumber, weightKg, reps, note = '' }) {
   const volume = weightKg * reps
   const dateKey = new Date().toISOString().slice(0, 10)
-  await addDoc(collection(db, 'exerciseLogs', uid, 'logs'), {
+  await trackedWrite(() => addDoc(collection(db, 'exerciseLogs', uid, 'logs'), stampForWrite({
     sessionId, exerciseId, exerciseName, setNumber, weightKg, reps, volume, note,
     date: dateKey, timestamp: serverTimestamp()
-  })
-  await updateDoc(doc(db, 'workoutSessions', uid, 'sessions', sessionId), {
+  })))
+  await trackedWrite(() => updateDoc(doc(db, 'workoutSessions', uid, 'sessions', sessionId), {
     totalVolume: increment(volume),
     totalSets: increment(1)
-  })
+  }))
   await maybeSetPR(uid, exerciseId, exerciseName, weightKg, reps)
 }
 
