@@ -76,8 +76,13 @@ async function loadCatalog() {
 }
 
 export async function findExerciseMedia({ id, name } = {}) {
+  // Keep exercise coaching imagery local and offline-ready. The previous remote
+  // catalog returned cartoon diagrams and made the detail page slow to render.
+  return localMediaFor({ id, name })
+
+  /*
   const catalog = await loadCatalog()
-  if (!catalog.length) return null
+  if (!catalog.length) return localMediaFor({ id, name })
 
   const wantedId = normalize(id).replace(/ /g, '-')
   const wantedName = normalize(name)
@@ -102,11 +107,28 @@ export async function findExerciseMedia({ id, name } = {}) {
 
     const generated = slugify(name)
     const bySlug = catalog.find(e => normalize(e.id).replace(/ /g, '-') === generated)
-    if (!bySlug) return null
+    if (!bySlug) return localMediaFor({ id, name })
     return mediaFromRecord(bySlug)
   }
 
-  return mediaFromRecord(exact)
+  return mediaFromRecord(exact) || localMediaFor({ id, name })
+}
+
+*/
+
+function localMediaFor({ id, name } = {}) {
+  const value = `${id || ''} ${name || ''}`.toLowerCase()
+  let file = 'row.png'
+  if (/bench|chest|fly|push.?up|dip/.test(value)) file = 'chest-bench.png'
+  else if (/shoulder|overhead|lateral|front.?raise|arnold|press/.test(value)) file = 'shoulder-press.png'
+  else if (/squat|lunge|leg|calf|glute|hamstring|deadlift/.test(value)) file = 'squat.png'
+  else if (/plank|crunch|sit.?up|ab|mountain/.test(value)) file = 'push-up.png'
+  return {
+    imageUrlStart: `/exercise-images/${file}`,
+    imageUrlEnd: `/exercise-images/${file}`,
+    imageUrl: `/exercise-images/${file}`,
+    source: 'ForgeFit realistic media'
+  }
 }
 
 function mediaFromRecord(record) {
