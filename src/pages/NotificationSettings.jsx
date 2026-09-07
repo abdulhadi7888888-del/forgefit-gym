@@ -49,7 +49,7 @@ export default function NotificationSettings() {
 
         <div className="card">
           {pushStatus === 'enabled'
-            ? <p>✓ Push notifications enabled on this device</p>
+            ? <p>Push notifications enabled on this device</p>
             : (
               <>
                 <p className="muted">Enable push to get PR alerts and reminders even when the app is closed.</p>

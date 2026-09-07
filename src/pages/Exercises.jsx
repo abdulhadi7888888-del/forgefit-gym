@@ -3,15 +3,30 @@ import { useNavigate, Link } from 'react-router-dom'
 import { exercises, muscleGroups } from '../data/exercises'
 import { track } from '../lib/analytics'
 import TabBar from '../components/TabBar'
+import ExerciseThumb from '../components/ExerciseThumb'
+import { loadRepdbExercises } from '../lib/repdbCatalog'
 
 export default function Exercises() {
   const [q, setQ] = useState('')
   const [muscle, setMuscle] = useState('All')
   const [equipment, setEquipment] = useState('All')
   const [difficulty, setDifficulty] = useState('All')
+  const [fullCatalog, setFullCatalog] = useState(exercises)
+  const [catalogLoading, setCatalogLoading] = useState(true)
   const nav = useNavigate()
 
-  const filtered = exercises.filter(e => {
+  useEffect(() => {
+    let active = true
+    loadRepdbExercises().then(remote => {
+      if (!active) return
+      const bySlug = new Map(exercises.map(e => [e.slug, e]))
+      remote.forEach(e => { if (!bySlug.has(e.slug)) bySlug.set(e.slug, e) })
+      setFullCatalog([...bySlug.values()])
+    }).finally(() => { if (active) setCatalogLoading(false) })
+    return () => { active = false }
+  }, [])
+
+  const filtered = fullCatalog.filter(e => {
     const matchesQ = (e.name + e.primaryMuscle + e.equipment).toLowerCase().includes(q.toLowerCase())
     const matchesMuscle = muscle === 'All' || e.primaryMuscle === muscle
     const matchesEquipment = equipment === 'All' || e.equipment === equipment
@@ -29,7 +44,7 @@ export default function Exercises() {
       <header><div className="brand" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><img src="/icon-192.png" alt="ForgeFit Gym logo" width="28" height="28" style={{ borderRadius: 8 }} />FORGE<span>FIT</span> GYM</div></header>
       <main>
         <div className="eyebrow">LIBRARY</div>
-        <h1>{exercises.length}+ exercises</h1>
+        <h1>{catalogLoading ? `${exercises.length}+ exercises` : `${fullCatalog.length} exercises`}</h1>
         <input className="search" placeholder="Search exercise, muscle or equipment…"
           value={q} onChange={e => handleSearch(e.target.value)} />
         <div className="chips" style={{ margin: '12px 0' }}>
@@ -38,10 +53,10 @@ export default function Exercises() {
           ))}
         </div>
         <div className="row" style={{ gap: 8, marginBottom: 10 }}>
-          <select value={equipment} onChange={e => setEquipment(e.target.value)} style={{ flex: 1 }}><option>All</option>{[...new Set(exercises.map(x => x.equipment))].sort().map(x => <option key={x}>{x}</option>)}</select>
+          <select value={equipment} onChange={e => setEquipment(e.target.value)} style={{ flex: 1 }}><option>All</option>{[...new Set(fullCatalog.map(x => x.equipment))].sort().map(x => <option key={x}>{x}</option>)}</select>
           <select value={difficulty} onChange={e => setDifficulty(e.target.value)} style={{ flex: 1 }}><option>All</option><option>beginner</option><option>intermediate</option><option>advanced</option></select>
         </div>
-        <p className="muted" style={{ marginTop: 0 }}>{filtered.length} exercises found • Search by name, muscle or equipment</p>
+        <p className="muted" style={{ marginTop: 0 }}>{filtered.length} exercises found • {catalogLoading ? 'Loading the full illustrated catalog…' : 'Every listed exercise has demonstration media'}</p>
         <div className="row" style={{ margin: '10px 0' }}>
           <Link to="/custom-exercise" className="secondary" style={{ textDecoration: 'none', display: 'block', textAlign: 'center', width: '48%' }}>+ CUSTOM EXERCISE</Link>
           <Link to="/history" className="secondary" style={{ textDecoration: 'none', display: 'block', textAlign: 'center', width: '48%' }}>WORKOUT HISTORY</Link>
@@ -64,24 +79,4 @@ export default function Exercises() {
       <TabBar active="exercises" />
     </div>
   )
-}
-
-
-function ExerciseThumb({ exercise }) {
-  const [src, setSrc] = useState(null)
-  const [failed, setFailed] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    import('../lib/exerciseMedia').then(({ findExerciseMedia }) =>
-      findExerciseMedia({ id: exercise.slug, name: exercise.name }).then(media => {
-        if (!cancelled && media) setSrc(media.imageUrlStart || media.imageUrl)
-      })
-    )
-    return () => { cancelled = true }
-  }, [exercise.slug, exercise.name])
-
-  const localSrc = exercise.imageUrlStart || exercise.imageUrl || null
-  if ((!src || failed) && !localSrc) return <div className="thumb thumb-empty">VIEW</div>
-  return <div className="thumb thumb-image"><img src={src || localSrc} alt={`${exercise.name} demonstration`} loading="lazy" onError={() => setFailed(true)} /></div>
 }

@@ -85,27 +85,45 @@ export default function Home() {
 
         if (cancelled) return
 
+        // Migrate older 5-day plans to the new Upper/Lower + Push/Pull/Legs
+        // split. This prevents an already-saved plan from continuing to show
+        // the old repeated Chest/Back/Legs rotation.
+        if (p && profile?.trainingFrequency === 5 && p.splitVersion !== 3) {
+          const upgraded = generatePlan({
+            daysPerWeek: 5,
+            equipment: profile.equipment || [],
+            exerciseLibrary: exercises,
+            fitnessLevel: profile.fitnessLevel || 'beginner',
+            durationDays: profile.programDurationDays || p.totalDays || 90
+          })
+          if (p.id) {
+            try {
+              await updatePlan(user.uid, p.id, { ...upgraded, isActive: true })
+              p = { id: p.id, ...upgraded }
+            } catch (migrationErr) {
+              console.warn('Could not save the new 5-day split yet; using it locally.', migrationErr)
+              p = { id: p.id, ...upgraded }
+            }
+          } else {
+            p = { id: null, ...upgraded }
+          }
+        }
+
         setPlan(p)
         setToday(todaysWorkout(p))
+        // The dashboard shell and today's workout must render independently of
+        // optional analytics/history queries. Never keep the whole app behind a
+        // Firestore stats request.
+        if (!cancelled) setLoading(false)
 
-        // Stats are useful but must never block the dashboard itself. If one
-        // Firestore query fails/offline, show the dashboard with empty stats.
-        const [logsResult, sessionsResult] = await Promise.allSettled([
-          withTimeout(getLogsSince(user.uid, dateKeyDaysAgo(7))),
-          withTimeout(getRecentSessions(user.uid, 5))
-        ])
-
-        if (cancelled) return
-
-        setLogs(logsResult.status === 'fulfilled' ? logsResult.value : [])
-        setSessions(sessionsResult.status === 'fulfilled' ? sessionsResult.value : [])
-
-        if (logsResult.status === 'rejected' || sessionsResult.status === 'rejected') {
-          console.warn('Some dashboard stats could not be loaded.', {
-            logs: logsResult.reason,
-            sessions: sessionsResult.reason
-          })
-        }
+        Promise.allSettled([
+          withTimeout(getLogsSince(user.uid, dateKeyDaysAgo(7)), 4000),
+          withTimeout(getRecentSessions(user.uid, 5), 4000)
+        ]).then(([logsResult, sessionsResult]) => {
+          if (cancelled) return
+          setLogs(logsResult.status === 'fulfilled' ? logsResult.value : [])
+          setSessions(sessionsResult.status === 'fulfilled' ? sessionsResult.value : [])
+        })
       } catch (err) {
         if (!cancelled) {
           console.error('Home dashboard failed to load:', err)
@@ -127,8 +145,13 @@ export default function Home() {
       setPreviewImage(null)
       return undefined
     }
+    // Show the bundled start image immediately; upgrade to the real remote
+    // catalog image when it is available. This keeps the home screen visual
+    // even on slow/offline connections.
+    const local = exercises.find(e => e.slug === first.exerciseId)?.imageUrlStart || null
+    setPreviewImage(local)
     findExerciseMedia({ id: first.exerciseId, name: first.name }).then(media => {
-      if (!cancelled) setPreviewImage(media?.imageUrlStart || media?.imageUrl || null)
+      if (!cancelled && media) setPreviewImage(media.imageUrlStart || media.imageUrl || local)
     })
     return () => { cancelled = true }
   }, [today])
@@ -223,7 +246,7 @@ export default function Home() {
                     : 'Recovery — no session scheduled'}
                 </div>
               </div>
-              <div style={{ fontSize: 32 }}>{canStartToday ? '🏋️' : '😴'}</div>
+              <div className="today-status" aria-hidden="true">{canStartToday ? 'READY' : 'REST'}</div>
             </div>
             {canStartToday && previewImage && (
               <div className="home-exercise-preview">
@@ -235,6 +258,26 @@ export default function Home() {
                 START WORKOUT
               </button>
             )}
+          </div>
+        )}
+
+        {profile?.trainingFrequency === 5 && isProgram && !programComplete && (
+          <div className="card" style={{ marginTop: 14 }}>
+            <div className="row">
+              <div>
+                <h3 style={{ margin: 0 }}>5-DAY TRAINING SPLIT</h3>
+                <span className="muted">Upper / Lower / Push / Pull / Legs</span>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 7, marginTop: 14 }}>
+              {['UPPER', 'LOWER', 'PUSH', 'PULL', 'LEGS'].map((label, i) => (
+                <div key={label} style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 5px', textAlign: 'center', background: today?.name?.toUpperCase() === label ? 'var(--accent)' : 'var(--card)' }}>
+                  <b style={{ fontSize: 11 }}>{i + 1}</b>
+                  <div style={{ fontSize: 10, marginTop: 4 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+            <p className="muted" style={{ marginBottom: 0, fontSize: 13 }}>Monday-Friday are training days. Saturday and Sunday are recovery days. Exercises rotate so the same movement is not prescribed every training week.</p>
           </div>
         )}
 

@@ -430,11 +430,53 @@ function stepImagePaths(category) {
   }
 }
 
+const GUIDE_BY_CATEGORY = {
+  'lying-press': ['Lie flat with your feet planted and shoulder blades set.', 'Lower the weight under control toward the chest.', 'Press upward without bouncing or losing your shoulder position.', 'Finish the rep with controlled elbows and a stable torso.'],
+  'lying-press-db': ['Set the bench and brace your feet before lifting the dumbbells.', 'Lower both weights with control until the upper arms are comfortably below parallel.', 'Press the dumbbells up while keeping the wrists stacked.', 'Return to the start without dropping the weights.'],
+  'lying-press-machine': ['Adjust the seat so the handles line up with mid-chest.', 'Brace your torso and take the handles with a neutral wrist.', 'Press smoothly until the arms are nearly straight.', 'Control the return and keep the chest engaged.'],
+  'lying-press-smith': ['Set the bench and bar so the starting position is stable.', 'Unrack with the wrists stacked and shoulder blades supported.', 'Lower the bar under control toward the chest.', 'Press smoothly and re-rack only after the final rep.'],
+  'pushup': ['Start in a strong plank with hands just outside shoulder width.', 'Lower your chest while keeping your body in one line.', 'Press the floor away and keep the elbows controlled.', 'Stop when your form starts to change.'],
+  'fly': ['Set a stable stance or bench position and soften the elbows.', 'Open the arms under control until you feel a comfortable chest stretch.', 'Bring the hands together by squeezing the chest.', 'Keep the movement smooth rather than swinging the weights.'],
+  'fly-db': ['Set the bench and hold the dumbbells above the chest.', 'Lower the weights in a wide arc with slightly bent elbows.', 'Reverse the arc by squeezing the chest.', 'Keep the shoulder joint comfortable throughout.'],
+  'row': ['Brace the torso and keep the spine neutral.', 'Pull the weight toward the lower ribs.', 'Pause briefly while squeezing the upper back.', 'Lower the weight slowly without rounding the back.'],
+  'row-db': ['Support the body and keep the working shoulder controlled.', 'Pull the dumbbell toward the hip or lower ribs.', 'Squeeze the back without twisting the torso.', 'Lower to a full comfortable stretch.'],
+  'pulldown': ['Set the thigh pad and take a comfortable grip.', 'Pull the bar toward the upper chest while keeping the torso stable.', 'Pause with the shoulder blades moving down and back.', 'Control the bar to the start without shrugging.'],
+  'pullup': ['Start from a controlled hang with the shoulders active.', 'Pull the body upward by driving the elbows toward the ribs.', 'Bring the chin over the bar if your range allows.', 'Lower under control instead of dropping.'],
+  'hinge': ['Stand with a balanced stance and brace the trunk.', 'Hinge at the hips while keeping the back neutral.', 'Drive the floor away and extend the hips to stand tall.', 'Finish tall without leaning backward.'],
+  'hinge-db': ['Hold the dumbbells close to the legs and brace the trunk.', 'Push the hips back while keeping a neutral spine.', 'Drive through the floor and squeeze the glutes to stand.', 'Lower again with the same controlled hinge.'],
+  'squat': ['Set the feet in a comfortable stance and brace the trunk.', 'Sit down and back while keeping the knees tracking with the toes.', 'Descend only as far as you can maintain good control.', 'Drive through the feet to stand without collapsing the knees.'],
+  'squat-db': ['Hold the load securely and brace before descending.', 'Lower with the knees tracking over the toes.', 'Keep the chest controlled and the weight balanced.', 'Stand by driving through the whole foot.'],
+  'squat-machine': ['Adjust the machine so the hips and feet are comfortable.', 'Lower the platform with controlled knee and hip flexion.', 'Use a depth that keeps the pelvis and knees controlled.', 'Press through the platform without locking out aggressively.'],
+  'lunge': ['Stand tall with the trunk braced.', 'Step or split into a controlled lunge.', 'Lower until the front leg is comfortably loaded and balanced.', 'Drive through the front foot to return to the start.'],
+  'hip-thrust': ['Set the upper back securely and place the feet under the knees.', 'Lower the hips with the ribs controlled.', 'Drive through the feet and squeeze the glutes at the top.', 'Lower slowly without overextending the lower back.'],
+  'leg-curl': ['Set the machine so the knee joint lines up with the pivot.', 'Curl the pad toward the body without lifting the hips.', 'Squeeze the hamstrings briefly.', 'Return the weight slowly to the start.'],
+  'leg-extension': ['Adjust the pad so it rests comfortably above the ankles.', 'Extend the knees smoothly without swinging.', 'Pause briefly near the top.', 'Lower the pad under control.'],
+  'calf-raise': ['Stand securely with the feet balanced on the platform.', 'Lower the heels through a comfortable range.', 'Drive through the balls of the feet and raise the heels.', 'Pause at the top and lower slowly.'],
+  'curl': ['Keep the elbows close to the torso and brace the body.', 'Curl the weight without swinging the shoulders.', 'Squeeze the biceps near the top.', 'Lower slowly to the starting position.'],
+  'curl-db': ['Keep the wrists neutral and elbows controlled.', 'Curl the dumbbells through a comfortable range.', 'Squeeze the biceps without moving the upper arms.', 'Lower slowly and repeat.'],
+  'pushdown': ['Set the cable and brace the torso.', 'Keep the elbows close while extending the arms.', 'Squeeze the triceps at full comfortable extension.', 'Return the handle slowly without letting the shoulders roll forward.'],
+  'triceps-ext-overhead': ['Brace the trunk and keep the elbows pointed forward.', 'Lower the weight behind the head with control.', 'Extend the elbows to bring the weight back up.', 'Keep the upper arms stable throughout.'],
+  'lateral-raise': ['Stand tall with a slight bend in the elbows.', 'Raise the arms out to the sides under control.', 'Stop around shoulder height or a comfortable range.', 'Lower slowly without swinging.'],
+  'overhead-press': ['Brace the trunk and start with the weight at shoulder level.', 'Press overhead while keeping the ribs controlled.', 'Finish with the weight balanced over the shoulders.', 'Lower under control.'],
+  'overhead-press-db': ['Set the dumbbells at shoulder height and brace.', 'Press both weights upward without leaning back.', 'Finish with the arms controlled overhead.', 'Lower the dumbbells to the shoulders slowly.'],
+  'crunch': ['Brace the trunk and keep the neck relaxed.', 'Curl the ribcage toward the pelvis using the abs.', 'Pause briefly at the top.', 'Lower slowly without pulling on the neck.'],
+  'generic': ['Set up in a stable position and brace your body.', 'Move through a comfortable range with control.', 'Keep the target muscle engaged and avoid momentum.', 'Stop the set when technique starts to break down.']
+}
+
 function withStepImages(list) {
+  // Only ship exercises that have a dedicated start/finish demonstration.
+  // Never show a generic letter/placeholder image for a real exercise.
   return list.map(e => {
-    const category = SLUG_STEP_CATEGORY[e.slug] || MUSCLE_DEFAULT_CATEGORY[e.primaryMuscle] || 'generic'
-    return { ...e, ...stepImagePaths(category) }
-  })
+    const category = SLUG_STEP_CATEGORY[e.slug]
+    if (!category) return null
+    const instructions = Array.isArray(e.instructions) && e.instructions.length ? e.instructions : (GUIDE_BY_CATEGORY[category] || GUIDE_BY_CATEGORY.generic)
+    const safetyTips = Array.isArray(e.safetyTips) && e.safetyTips.length ? e.safetyTips : [
+      'Use a load you can control for the full target range.',
+      'Keep the movement smooth and stop if sharp pain occurs.',
+      'Prioritize technique before adding weight.'
+    ]
+    return { ...e, instructions, safetyTips, ...stepImagePaths(category) }
+  }).filter(Boolean)
 }
 
 export const exerciseLibrary = withStepImages(combinedExercises)

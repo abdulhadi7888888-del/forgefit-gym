@@ -6,6 +6,7 @@ import { collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebas
 import { db } from '../lib/firebase'
 import { getFavorites, toggleFavorite } from '../lib/customData'
 import ExerciseMedia from '../components/ExerciseMedia'
+import { findRepdbExercise } from '../lib/repdbCatalog'
 
 const TABS = ['Overview', 'Instructions', 'Tips', 'History']
 
@@ -19,33 +20,46 @@ export default function ExerciseDetail() {
   const [pr, setPr] = useState(null)
   const [favId, setFavId] = useState(null)
   const [tab, setTab] = useState('Overview')
+  const [loadError, setLoadError] = useState('')
+  const [favoriteSaving, setFavoriteSaving] = useState(false)
 
   useEffect(() => {
     async function load() {
-      const exSnap = await getDoc(doc(db, 'exercises', slug))
-      setLiveExercise(exSnap.exists() ? exSnap.data() : null)
-
-      const q = query(
-        collection(db, 'exerciseLogs', user.uid, 'logs'),
-        where('exerciseId', '==', slug),
-        orderBy('timestamp', 'desc')
-      )
-      const snap = await getDocs(q)
-      setHistory(snap.docs.slice(0, 10).map(d => d.data()))
-
-      const prSnap = await getDoc(doc(db, 'personalRecords', user.uid, 'records', slug))
-      setPr(prSnap.exists() ? prSnap.data() : null)
-
-      const favs = await getFavorites(user.uid)
-      const existing = favs.find(f => f.type === 'exercise' && f.refId === slug)
-      setFavId(existing ? existing.id : null)
+      try {
+        if (!staticExercise) {
+          const remote = await findRepdbExercise(slug)
+          if (remote) setLiveExercise(remote)
+        }
+      } catch (err) { console.warn('RepDB exercise unavailable:', err) }
+      try {
+        const exSnap = await getDoc(doc(db, 'exercises', slug))
+        setLiveExercise(exSnap.exists() ? exSnap.data() : null)
+      } catch (err) { console.warn('Live exercise data unavailable:', err) }
+      try {
+        const q = query(collection(db, 'exerciseLogs', user.uid, 'logs'), where('exerciseId', '==', slug), orderBy('timestamp', 'desc'))
+        const snap = await getDocs(q)
+        setHistory(snap.docs.slice(0, 10).map(d => d.data()))
+      } catch (err) { console.warn('Exercise history unavailable:', err) }
+      try {
+        const prSnap = await getDoc(doc(db, 'personalRecords', user.uid, 'records', slug))
+        setPr(prSnap.exists() ? prSnap.data() : null)
+      } catch (err) { console.warn('PR unavailable:', err) }
+      try {
+        const favs = await getFavorites(user.uid)
+        const existing = favs.find(f => f.type === 'exercise' && f.refId === slug)
+        setFavId(existing ? existing.id : null)
+      } catch (err) { setLoadError('Some saved data is unavailable offline.') }
     }
     if (user) load()
   }, [user, slug])
 
   async function handleFavorite() {
+    if (favoriteSaving) return
+    setFavoriteSaving(true)
+    try {
     const newId = await toggleFavorite(user.uid, 'exercise', slug, !!favId, favId)
     setFavId(newId)
+    } catch (err) { setLoadError('Could not update favorites. Check your connection.') } finally { setFavoriteSaving(false) }
   }
 
   // Keep the local exercise definition as the baseline so every exercise
@@ -65,11 +79,13 @@ export default function ExerciseDetail() {
   return (
     <div className="app">
       <header>
-        <button className="secondary" onClick={() => nav(-1)}>← Back</button>
-        <button className="secondary" onClick={handleFavorite}>{favId ? 'Saved' : 'Save'}</button>
+        <button className="secondary" onClick={() => nav(-1)}>BACK</button>
+        <button className="secondary" onClick={handleFavorite} disabled={favoriteSaving}>{favId ? 'Saved' : 'Save'}</button>
       </header>
       <main>
         <h1>{exercise.name}</h1>
+        {exercise.source === 'RepDB' && <p className="muted">Exercise data by RepDB</p>}
+        {loadError && <p className="error">{loadError}</p>}
 
         <ExerciseMedia
           imageUrl={exercise.imageUrl}

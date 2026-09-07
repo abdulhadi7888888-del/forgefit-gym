@@ -58,7 +58,7 @@ export default function WorkoutGenerator() {
   return (
     <div className="app">
       <header>
-        <button className="secondary" onClick={() => nav(-1)}>← Back</button>
+        <button className="secondary" onClick={() => nav(-1)}>BACK</button>
         <div className="brand" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><img src="/icon-192.png" alt="ForgeFit Gym logo" width="28" height="28" style={{ borderRadius: 8 }} />FORGE<span>FIT</span> GYM</div>
       </header>
       <main>
@@ -135,7 +135,7 @@ export default function WorkoutGenerator() {
               <button className="secondary" style={{ flex: 1 }} onClick={() => generate(true)}>REGENERATE</button>
               <button className="secondary" style={{ flex: 1 }} onClick={() => nav('/workout-builder')}>EDIT MANUALLY</button>
               <button className="primary" style={{ flex: 1, marginTop: 0 }} disabled={saving || saved} onClick={savePlan}>
-                {saved ? 'SAVED ✓' : saving ? 'SAVING…' : 'SAVE PLAN'}
+                {saved ? 'SAVED' : saving ? 'SAVING…' : 'SAVE PLAN'}
               </button>
             </div>
           </>

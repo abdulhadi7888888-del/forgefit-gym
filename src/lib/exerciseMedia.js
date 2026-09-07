@@ -19,6 +19,27 @@ function slugify(value) {
 // These aliases make the catalog image appear for the common bench-press
 // variants instead of falling back to the local demo diagram.
 const ID_ALIASES = {
+  // User-facing names used by ForgeFit -> canonical RepDB ids.
+  'dumbbell-overhead-press': 'dumbbell-shoulder-press',
+  'barbell-overhead-press': 'barbell-overhead-press',
+  'machine-overhead-press': 'machine-shoulder-press',
+  'seated-dumbbell-press': 'seated-db-press',
+  'dumbbell-lateral-raise': 'dumbbell-lateral-raise',
+  'dumbbell-front-raise': 'dumbbell-front-raise',
+  'dumbbell-rear-delt-fly': 'rear-delt-fly',
+  'dumbbell-curl': 'dumbbell-bicep-curl',
+  'barbell-curl': 'barbell-curl',
+  'triceps-pushdown-rope': 'cable-tricep-pushdown',
+  'triceps-pushdown-straight-bar': 'cable-tricep-pushdown',
+  'overhead-triceps-extension': 'overhead-tricep-extension',
+  'back-squat': 'barbell-back-squat',
+  'goblet-squat': 'goblet-squat',
+  'walking-lunge': 'walking-lunge',
+  'standing-calf-raise': 'standing-calf-raise',
+  'seated-calf-raise': 'seated-calf-raise',
+  'hanging-leg-raise': 'hanging-leg-raise',
+  'ab-wheel-rollout': 'ab-wheel-rollout',
+  'plank': 'high-plank',
   'flat-barbell-bench-press': 'bench-press',
   'flat-dumbbell-bench-press': 'db-bench-press',
   'flat-smith-machine-bench-press': 'smith-machine-bench-press',

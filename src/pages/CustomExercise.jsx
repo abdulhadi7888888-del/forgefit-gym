@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { addCustomExercise, getCustomExercises, deleteCustomExercise } from '../lib/customData'
 import { muscleGroups, equipmentTypes } from '../data/exercises'
+import ExerciseThumb from '../components/ExerciseThumb'
 
 const DIFFICULTIES = ['beginner', 'intermediate', 'advanced']
 
 export default function CustomExercise() {
   const { user } = useAuth()
   const [list, setList] = useState([])
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     name: '', primaryMuscle: muscleGroups[0], equipment: equipmentTypes[0], difficulty: DIFFICULTIES[0],
     instructions: '', notes: '', imageUrl: '', videoUrl: '', defaultSets: 3, repRange: '8-12', restSeconds: 60
@@ -16,7 +19,8 @@ export default function CustomExercise() {
   useEffect(() => { refresh() }, [user])
 
   async function refresh() {
-    setList(await getCustomExercises(user.uid))
+    try { setList(await getCustomExercises(user.uid)) }
+    catch (err) { console.warn('Custom exercises unavailable:', err); setError('Could not load your custom exercises.') }
   }
 
   function update(field, value) {
@@ -24,7 +28,9 @@ export default function CustomExercise() {
   }
 
   async function save() {
-    if (!form.name) return
+    if (!form.name || !form.imageUrl || saving) return
+    setSaving(true); setError('')
+    try {
     await addCustomExercise(user.uid, {
       ...form,
       slug: form.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
@@ -36,12 +42,13 @@ export default function CustomExercise() {
       name: '', primaryMuscle: muscleGroups[0], equipment: equipmentTypes[0], difficulty: DIFFICULTIES[0],
       instructions: '', notes: '', imageUrl: '', videoUrl: '', defaultSets: 3, repRange: '8-12', restSeconds: 60
     })
-    refresh()
+    await refresh()
+    } catch (err) { setError('Could not save this exercise. Check your connection and try again.') } finally { setSaving(false) }
   }
 
   async function remove(id) {
-    await deleteCustomExercise(user.uid, id)
-    refresh()
+    try { await deleteCustomExercise(user.uid, id); await refresh() }
+    catch (err) { setError('Could not delete this exercise. Check your connection.') }
   }
 
   return (
@@ -50,6 +57,7 @@ export default function CustomExercise() {
       <main>
         <div className="eyebrow">MY EXERCISES</div>
         <h1>Create a custom exercise</h1>
+        {error && <p className="error">{error}</p>}
 
         <div className="card">
           <div className="field"><label>Name</label>
@@ -72,7 +80,7 @@ export default function CustomExercise() {
             <input className="search" value={form.instructions} onChange={e => update('instructions', e.target.value)} /></div>
           <div className="field"><label>Notes</label>
             <input className="search" value={form.notes} onChange={e => update('notes', e.target.value)} /></div>
-          <div className="field"><label>Image URL (optional)</label>
+          <div className="field"><label>Exercise image URL (required)</label>
             <input className="search" value={form.imageUrl} onChange={e => update('imageUrl', e.target.value)} /></div>
           <div className="field"><label>Video URL (optional)</label>
             <input className="search" value={form.videoUrl} onChange={e => update('videoUrl', e.target.value)} /></div>
@@ -84,14 +92,14 @@ export default function CustomExercise() {
             <input className="search" style={{ width: '30%' }} type="number" value={form.restSeconds}
               onChange={e => update('restSeconds', Number(e.target.value))} placeholder="Rest (s)" />
           </div>
-          <button className="primary" onClick={save}>SAVE EXERCISE</button>
+          <button className="primary" onClick={save} disabled={saving || !form.name || !form.imageUrl}>{saving ? 'SAVING…' : 'SAVE EXERCISE'}</button>
         </div>
 
         <h3>Your custom exercises</h3>
         {list.length === 0 && <p className="muted">None yet.</p>}
         {list.map(e => (
           <div key={e.id} className="exercise">
-            <div className="thumb">💪</div>
+            <ExerciseThumb exercise={e} />
             <div style={{ flex: 1 }}><h3>{e.name}</h3><p>{e.primaryMuscle} • {e.equipment}</p></div>
             <button className="secondary" onClick={() => remove(e.id)}>Delete</button>
           </div>

@@ -18,15 +18,18 @@ export default function WorkoutBuilder() {
   const [name, setName] = useState('')
   const [dayExercises, setDayExercises] = useState([])
   const [picker, setPicker] = useState('')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   const allExercises = [...libraryExercises, ...customExercises]
 
   useEffect(() => { refresh() }, [user])
 
   async function refresh() {
-    const [p, ce] = await Promise.all([getAllPlans(user.uid), getCustomExercises(user.uid)])
-    setPlans(p)
-    setCustomExercises(ce)
+    try {
+      const [p, ce] = await Promise.all([getAllPlans(user.uid), getCustomExercises(user.uid)])
+      setPlans(p); setCustomExercises(ce); setError('')
+    } catch (err) { console.warn('Workout builder data unavailable:', err); setError('Your saved workouts could not be loaded. Check your connection.') }
   }
 
   function addExerciseToBuild() {
@@ -58,14 +61,17 @@ export default function WorkoutBuilder() {
   }
 
   async function savePlan() {
-    if (!name || dayExercises.length === 0) return
+    if (!name || dayExercises.length === 0 || saving) return
+    setSaving(true); setError('')
+    try {
     await createCustomPlan(user.uid, {
       name,
       daysPerWeek: 1,
       schedule: [{ day: 'custom', name, exerciseIds: dayExercises }]
     })
     setName(''); setDayExercises([]); setBuilding(false)
-    refresh()
+    await refresh()
+    } catch (err) { setError('Could not save this workout. Check your connection.') } finally { setSaving(false) }
   }
 
   async function activate(planId) {
@@ -89,12 +95,13 @@ export default function WorkoutBuilder() {
       <main>
         <div className="eyebrow">CUSTOM WORKOUTS</div>
         <h1>Build your own routine</h1>
+        {error && <p className="error">{error}</p>}
 
         {!building
           ? (
             <>
               <button className="primary" onClick={() => setBuilding(true)}>+ NEW CUSTOM WORKOUT</button>
-              <Link to="/workout-generator" className="secondary" style={{ textDecoration: 'none', display: 'block', textAlign: 'center', marginTop: 10 }}>✨ SMART WORKOUT GENERATOR</Link>
+              <Link to="/workout-generator" className="secondary" style={{ textDecoration: 'none', display: 'block', textAlign: 'center', marginTop: 10 }}>SMART WORKOUT GENERATOR</Link>
             </>
           )
           : (
@@ -125,9 +132,9 @@ export default function WorkoutBuilder() {
                   <div className="row">
                     <b>{e.name}</b>
                     <div>
-                      <button className="secondary" aria-label="Move exercise up" onClick={() => moveExercise(i, -1)}>↑</button>{' '}
-                      <button className="secondary" aria-label="Move exercise down" onClick={() => moveExercise(i, 1)}>↓</button>{' '}
-                      <button className="secondary" aria-label="Remove exercise" onClick={() => removeExercise(i)}>✕</button>
+                      <button className="secondary" aria-label="Move exercise up" onClick={() => moveExercise(i, -1)}>UP</button>{' '}
+                      <button className="secondary" aria-label="Move exercise down" onClick={() => moveExercise(i, 1)}>DOWN</button>{' '}
+                      <button className="secondary" aria-label="Remove exercise" onClick={() => removeExercise(i)}>REMOVE</button>
                     </div>
                   </div>
                   <div className="row" style={{ marginTop: 8 }}>
@@ -143,7 +150,7 @@ export default function WorkoutBuilder() {
 
               <div className="row" style={{ marginTop: 12 }}>
                 <button className="secondary" onClick={() => { setBuilding(false); setDayExercises([]); setName('') }}>CANCEL</button>
-                <button className="primary" onClick={savePlan}>SAVE WORKOUT</button>
+                <button className="primary" onClick={savePlan} disabled={saving}>{saving ? 'SAVING…' : 'SAVE WORKOUT'}</button>
               </div>
             </div>
           )}

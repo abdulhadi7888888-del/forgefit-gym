@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { adminGetAllExercises, adminSaveExercise, adminDeleteExercise } from '../../lib/adminData'
 import { muscleGroups, equipmentTypes } from '../../data/exercises'
+import ExerciseThumb from '../../components/ExerciseThumb'
 
 const EMPTY = {
   name: '', primaryMuscle: muscleGroups[0], equipment: equipmentTypes[0],
@@ -94,7 +95,7 @@ export default function AdminExercises() {
         <div className="card">
           {filtered.map(e => (
             <div key={e.slug} className="exercise">
-              <div className="thumb">💪</div>
+              <ExerciseThumb exercise={e} />
               <div style={{ flex: 1 }}><h3>{e.name}</h3><p>{e.primaryMuscle} • {e.equipment}</p></div>
               <button className="secondary" onClick={() => setEditing(e)}>Edit</button>
               <button className="secondary" onClick={() => remove(e.slug)}>Delete</button>

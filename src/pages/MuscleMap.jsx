@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { exercises } from '../data/exercises'
 import TabBar from '../components/TabBar'
+import ExerciseThumb from '../components/ExerciseThumb'
 
 // A faceted, low-poly muscular figure (no copyrighted anatomy art, no real
 // person). Coordinates live on a 200x420 canvas, mirrored around x=100 so
@@ -118,7 +119,7 @@ export default function MuscleMap() {
             {relevant.length === 0 && <p className="muted">No exercises tagged for this muscle yet.</p>}
             {relevant.map(e => (
               <div key={e.slug} className="exercise" onClick={() => nav(`/exercises/${e.slug}`)}>
-                <div className="thumb">💪</div>
+                <ExerciseThumb exercise={e} />
                 <div style={{ flex: 1 }}><h3>{e.name}</h3><p>{e.equipment}</p></div>
                 <span>›</span>
               </div>

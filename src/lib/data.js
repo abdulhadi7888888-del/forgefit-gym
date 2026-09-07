@@ -106,6 +106,18 @@ export async function getAllPRs(uid) {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
+export async function getRecentExerciseLogs(uid, exerciseId, max = 20) {
+  const q = query(
+    collection(db, 'exerciseLogs', uid, 'logs'),
+    where('exerciseId', '==', exerciseId)
+  )
+  const snap = await getDocs(q)
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.timestamp?.toMillis?.() || 0) - (a.timestamp?.toMillis?.() || 0))
+    .slice(0, max)
+}
+
 export async function addBodyWeight(uid, weightKg) {
   const dateKey = new Date().toISOString().slice(0, 10)
   await addDoc(collection(db, 'bodyWeight', uid, 'entries'), {

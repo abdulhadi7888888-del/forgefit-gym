@@ -4,16 +4,23 @@ import { useAuth } from '../context/AuthContext'
 import { getFavorites } from '../lib/customData'
 import { exercises } from '../data/exercises'
 import TabBar from '../components/TabBar'
+import ExerciseThumb from '../components/ExerciseThumb'
 
 export default function Favorites() {
   const { user } = useAuth()
   const nav = useNavigate()
   const [favs, setFavs] = useState([])
+  const [error, setError] = useState('')
 
   useEffect(() => {
     async function load() {
-      const f = await getFavorites(user.uid)
-      setFavs(f.filter(x => x.type === 'exercise'))
+      try {
+        const f = await getFavorites(user.uid)
+        setFavs(f.filter(x => x.type === 'exercise'))
+      } catch (err) {
+        console.warn('Favorites unavailable:', err)
+        setError('Favorites could not be loaded. Check your connection and try again.')
+      }
     }
     if (user) load()
   }, [user])
@@ -28,11 +35,12 @@ export default function Favorites() {
       <main>
         <div className="eyebrow">FAVORITES</div>
         <h1>Saved exercises</h1>
+        {error && <p className="error">{error}</p>}
         {favExercises.length === 0 && <p className="muted">Tap the star on any exercise to save it here.</p>}
         <div className="card">
           {favExercises.map(e => (
             <div key={e.slug} className="exercise" onClick={() => nav(`/exercises/${e.slug}`)}>
-              <div className="thumb">💪</div>
+              <ExerciseThumb exercise={e} />
               <div style={{ flex: 1 }}><h3>{e.name}</h3><p>{e.primaryMuscle} • {e.equipment}</p></div>
               <span>›</span>
             </div>

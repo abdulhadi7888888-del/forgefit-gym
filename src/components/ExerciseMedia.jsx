@@ -15,14 +15,7 @@ function StepImage({ src, fallbackSrc, alt, label }) {
     else setCurrentSrc(null)
   }
 
-  if (!currentSrc) {
-    return (
-      <div className="exercise-step exercise-step-empty">
-        <div className="exercise-placeholder">DEMO IMAGE</div>
-        <p>{label}</p>
-      </div>
-    )
-  }
+  if (!currentSrc) return null
 
   return (
     <div className="exercise-step">
@@ -42,8 +35,8 @@ function StepImage({ src, fallbackSrc, alt, label }) {
 function StepImages({ imageUrlStart, imageUrlEnd, imageUrl, remoteStart, remoteEnd, remoteImage, alt }) {
   const fallbackStart = imageUrlStart || imageUrl || remoteStart || remoteImage
   const fallbackEnd = imageUrlEnd || imageUrlStart || imageUrl || remoteEnd || remoteStart || remoteImage
-  const start = remoteStart || remoteImage || imageUrlStart || imageUrl
-  const end = remoteEnd || remoteStart || remoteImage || imageUrlEnd || imageUrlStart || imageUrl
+  const start = imageUrlStart || imageUrl || remoteStart || remoteImage
+  const end = imageUrlEnd || imageUrlStart || imageUrl || remoteEnd || remoteStart || remoteImage
 
   if (start || end) {
     return (
@@ -66,12 +59,7 @@ function StepImages({ imageUrlStart, imageUrlEnd, imageUrl, remoteStart, remoteE
     )
   }
 
-  return (
-    <section className="exercise-demo exercise-demo-empty">
-      <div className="exercise-placeholder">{alt.slice(0, 1).toUpperCase()}</div>
-      <p className="muted">Exercise demonstration is being prepared.</p>
-    </section>
-  )
+  return null
 }
 
 export default function ExerciseMedia({ imageUrl, imageUrlStart, imageUrlEnd, videoUrl, alt, exerciseId }) {

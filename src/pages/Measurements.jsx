@@ -57,7 +57,7 @@ export default function Measurements() {
   return (
     <div className="app">
       <header>
-        <button className="secondary" onClick={() => nav(-1)}>← Back</button>
+        <button className="secondary" onClick={() => nav(-1)}>BACK</button>
         <div className="brand" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><img src="/icon-192.png" alt="ForgeFit Gym logo" width="28" height="28" style={{ borderRadius: 8 }} />FORGE<span>FIT</span> GYM</div>
       </header>
       <main>

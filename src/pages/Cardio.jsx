@@ -54,7 +54,7 @@ export default function Cardio() {
           <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
             <span>Sync workouts from {platformLabel}</span>
             <button className="secondary" onClick={syncFromHealthApp} disabled={syncState === 'syncing'}>
-              {syncState === 'syncing' ? 'Syncing…' : syncState === 'done' ? 'Synced ✓' : 'Sync now'}
+              {syncState === 'syncing' ? 'Syncing…' : syncState === 'done' ? 'SYNCED' : 'Sync now'}
             </button>
           </div>
         )}

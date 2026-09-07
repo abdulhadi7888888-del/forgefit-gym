@@ -3,8 +3,13 @@ const TEMPLATES = {
   3: [['Push', ['Chest', 'Shoulders', 'Triceps']], ['Pull', ['Back', 'Traps', 'Biceps']], ['Legs', ['Legs', 'Glutes', 'Calves', 'Abs']]],
   4: [['Chest & Triceps', ['Chest', 'Triceps']], ['Back & Biceps', ['Back', 'Traps', 'Biceps']],
       ['Legs', ['Legs', 'Glutes', 'Calves']], ['Shoulders & Abs', ['Shoulders', 'Abs']]],
-  5: [['Chest', ['Chest']], ['Back', ['Back', 'Traps']], ['Legs', ['Legs', 'Glutes', 'Calves']],
-      ['Shoulders', ['Shoulders']], ['Arms & Abs', ['Biceps', 'Triceps', 'Forearms', 'Abs']]],
+  5: [
+    ['Upper', ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps']],
+    ['Lower', ['Legs', 'Glutes', 'Calves']],
+    ['Push', ['Chest', 'Shoulders', 'Triceps']],
+    ['Pull', ['Back', 'Traps', 'Biceps', 'Forearms']],
+    ['Legs', ['Legs', 'Glutes', 'Calves', 'Abs']]
+  ],
   6: [['Push', ['Chest', 'Shoulders', 'Triceps']], ['Pull', ['Back', 'Traps', 'Biceps']], ['Legs', ['Legs', 'Glutes', 'Calves']],
       ['Push', ['Chest', 'Shoulders', 'Triceps']], ['Pull', ['Back', 'Biceps', 'Forearms']], ['Legs', ['Legs', 'Glutes', 'Abs']]],
   7: [['Push', ['Chest', 'Shoulders', 'Triceps']], ['Pull', ['Back', 'Traps', 'Biceps']], ['Legs', ['Legs', 'Glutes', 'Calves']],
@@ -119,12 +124,17 @@ function applyPhase(base, phaseConfig, cycleIndex) {
 // button produce a genuinely different pick each time (a different exercise
 // per muscle group) instead of the same deterministic slice. Onboarding's
 // automatic 30-day program never passes it, so that flow stays deterministic.
-function pickExercisesForDay(available, muscles, perMuscle, shuffle) {
-  return muscles.flatMap(m => {
+function pickExercisesForDay(available, muscles, perMuscle, shuffle, rotation = 0) {
+  return muscles.flatMap((m, muscleIndex) => {
     const pool = available.filter(e => e.primaryMuscle === m)
+    if (!pool.length) return []
     const ordered = shuffle ? [...pool].sort(() => Math.random() - 0.5) : pool
-    return ordered.slice(0, perMuscle)
-  }).slice(0, 5)
+    // Rotate through the exercise library as the weeks progress so a 5-day
+    // program does not prescribe the exact same movement every week.
+    const start = ordered.length ? (rotation + muscleIndex) % ordered.length : 0
+    const rotated = [...ordered.slice(start), ...ordered.slice(0, start)]
+    return rotated.slice(0, perMuscle)
+  }).slice(0, 7)
 }
 
 // Spreads `count` training days evenly across a 7-day week (e.g. 3/week ->
@@ -132,6 +142,11 @@ function pickExercisesForDay(available, muscles, perMuscle, shuffle) {
 // bunching up.
 function spreadTrainingDays(daysPerWeek) {
   const n = Math.min(7, Math.max(1, daysPerWeek))
+  // Keep the common 5-day split easy to understand: Monday-Friday training,
+  // Saturday-Sunday recovery. Other frequencies are distributed across the week.
+  if (n === 5) return new Set([0, 1, 2, 3, 4])
+  if (n === 6) return new Set([0, 1, 2, 3, 4, 5])
+  if (n === 7) return new Set([0, 1, 2, 3, 4, 5, 6])
   const slots = new Set()
   for (let i = 0; i < n; i++) slots.add(Math.round(i * 7 / n))
   return slots
@@ -166,7 +181,7 @@ export function generatePlan({ daysPerWeek, equipment, exerciseLibrary, fitnessL
 
     if (isRetestDay) {
       const [label, muscles] = template[templateIndex % template.length]
-      const picked = pickExercisesForDay(available, muscles, 2, shuffle)
+      const picked = pickExercisesForDay(available, muscles, 2, shuffle, dayNumber + cycleIndex * 3)
       templateIndex++
       const { setBonus } = cumulativeOverload(cycleIndex)
       schedule.push({
@@ -192,7 +207,7 @@ export function generatePlan({ daysPerWeek, equipment, exerciseLibrary, fitnessL
 
     const [label, muscles] = template[templateIndex % template.length]
     templateIndex++
-    const picked = pickExercisesForDay(available, muscles, muscles.length > 1 ? 2 : 4, shuffle)
+    const picked = pickExercisesForDay(available, muscles, muscles.length > 1 ? 2 : 4, shuffle, dayNumber + cycleIndex * 3)
     schedule.push({
       dayNumber, week: weekIndex + 1, cycle: cycleIndex + 1, phase: phaseConfig.phase,
       name: label, isRestDay: false,
@@ -205,7 +220,7 @@ export function generatePlan({ daysPerWeek, equipment, exerciseLibrary, fitnessL
 
   return {
     name: `${durationLabel(totalDays)} ${fitnessLevel} Progression`,
-    daysPerWeek, totalDays, totalCycles, schedule
+    daysPerWeek, totalDays, totalCycles, schedule, splitVersion: 3
   }
 }
 

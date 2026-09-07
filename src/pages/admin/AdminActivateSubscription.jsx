@@ -73,7 +73,7 @@ export default function AdminActivateSubscription() {
               {matches.map(u => (
                 <div key={u.id} className="row" style={{ padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
                   <span>{u.email || u.displayName}</span>
-                  <button className="secondary" onClick={() => setUid(u.id)}>{uid === u.id ? 'Selected ✓' : 'Select'}</button>
+                  <button className="secondary" onClick={() => setUid(u.id)}>{uid === u.id ? 'SELECTED' : 'Select'}</button>
                 </div>
               ))}
             </div>

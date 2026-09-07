@@ -19,52 +19,63 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsub = watchAuthState(async (u) => {
       setUser(u)
-      if (u) {
-        track('app_opened')
+      if (!u) {
+        setProfile(null)
+        setLoading(false)
+        return
+      }
+
+      track('app_opened')
+      // Authentication itself should never be held hostage by optional profile
+      // bookkeeping. If Firestore is slow/offline, the user can still enter
+      // the app and the dashboard has its own offline fallback.
+      try {
+        const timeout = (promise, ms = 5000) => Promise.race([
+          promise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Profile request timed out')), ms))
+        ])
         const userRef = doc(db, 'users', u.uid)
-        const snap = await getDoc(userRef)
-        if (!snap.exists()) {
-          await setDoc(userRef, {
-            uid: u.uid,
-            email: u.email || null,
-            emailLower: u.email ? u.email.toLowerCase() : null,
-            displayName: u.displayName || null,
-            authProvider: u.isAnonymous ? 'guest' : (u.providerData[0]?.providerId || 'password'),
-            createdAt: serverTimestamp(),
-            lastLoginAt: serverTimestamp(),
-            role: 'user',
-            isPremium: false,
-            units: 'kg',
-            theme: 'dark'
-          })
-        } else {
-          await setDoc(userRef, {
-            lastLoginAt: serverTimestamp(),
-            ...(u.email ? { emailLower: u.email.toLowerCase() } : {})
-          }, { merge: true })
+        try {
+          const snap = await timeout(getDoc(userRef))
+          if (!snap.exists()) {
+            await timeout(setDoc(userRef, {
+              uid: u.uid, email: u.email || null,
+              emailLower: u.email ? u.email.toLowerCase() : null,
+              displayName: u.displayName || null,
+              authProvider: u.isAnonymous ? 'guest' : (u.providerData[0]?.providerId || 'password'),
+              createdAt: serverTimestamp(), lastLoginAt: serverTimestamp(),
+              role: 'user', isPremium: false, units: 'kg', theme: 'dark'
+            }), 5000)
+          } else {
+            await timeout(setDoc(userRef, {
+              lastLoginAt: serverTimestamp(),
+              ...(u.email ? { emailLower: u.email.toLowerCase() } : {})
+            }, { merge: true }), 5000)
+          }
+        } catch (err) {
+          console.warn('User profile bookkeeping unavailable:', err)
         }
 
         if (u.email && u.email.toLowerCase() === OWNER_EMAIL) {
           try {
-            await setDoc(doc(db, 'admins', u.uid), {
-              role: 'admin',
-              grantedAt: serverTimestamp(),
-              grantedBy: 'auto-owner-email'
-            }, { merge: true })
+            await timeout(setDoc(doc(db, 'admins', u.uid), {
+              role: 'admin', grantedAt: serverTimestamp(), grantedBy: 'auto-owner-email'
+            }, { merge: true }), 4000)
           } catch (err) {
-            // If firestore.rules hasn't been updated yet, this silently no-ops
-            // instead of blocking sign-in.
-            console.warn('Auto admin grant failed (check firestore.rules)', err)
+            console.warn('Auto admin grant unavailable:', err)
           }
         }
 
-        const profileRef = doc(db, 'profiles', u.uid)
-        const profileSnap = await getDoc(profileRef)
-        setProfile(profileSnap.exists() ? profileSnap.data() : null)
-      } else {
-        setProfile(null)
+        try {
+          const profileSnap = await timeout(getDoc(doc(db, 'profiles', u.uid)), 5000)
+          setProfile(profileSnap.exists() ? profileSnap.data() : null)
+        } catch (err) {
+          console.warn('Profile unavailable; opening app without profile:', err)
+          setProfile(null)
+        }
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     })
     return unsub
   }, [])
