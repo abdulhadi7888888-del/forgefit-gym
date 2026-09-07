@@ -9,7 +9,7 @@ function StepImage({ src, alt, label }) {
       <div className="exercise-visual">
         <img src={src} alt={`${alt} — ${label.toLowerCase()}`} loading="eager" decoding="async" onError={(event) => { event.currentTarget.style.display = 'none' }} />
       </div>
-        <p>{label}</p><small className="media-caption">REALISTIC GYM DEMO</small>
+      <p>{label}</p><small className="media-caption">REALISTIC GYM PHOTO · {label === 'STEP 1 · START' ? 'SETUP POSITION' : 'FINISH POSITION'}</small>
     </div>
   )
 }

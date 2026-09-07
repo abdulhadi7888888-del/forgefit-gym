@@ -20,7 +20,7 @@ import { getFirestore } from 'firebase/firestore'
 const firebaseConfig = {
   // Firebase web config is safe to expose in the client; keep the API key in
   // Vite env when available and support the project defaults as a fallback.
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.apiKey,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.apiKey || 'AIzaSyForgeFitPublicWebConfig',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'forgefit-gym.firebaseapp.com',
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'forgefit-gym',
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'forgefit-gym.firebasestorage.app',
