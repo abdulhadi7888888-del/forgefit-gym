@@ -18,26 +18,38 @@ import {
 import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  // Firebase web config is safe to expose in the client; keep the API key in
+  // Vite env when available and support the project defaults as a fallback.
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'forgefit-gym.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'forgefit-gym',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'forgefit-gym.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '604418018647',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:604418018647:web:5ac4bdf4c495fd44e18212',
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-KNN2XBZZFX'
 }
 
 const missing = Object.entries(firebaseConfig)
   .filter(([k, v]) => k !== 'measurementId' && !v)
   .map(([k]) => k)
-if (missing.length) {
-  // Loud, early failure beats a silent broken auth screen later.
-  console.error(
-    `Firebase config is missing: ${missing.join(', ')}. Copy .env.example to .env and fill it in.`
-  )
+export const firebaseConfigMissing = missing.length > 0
+
+if (firebaseConfigMissing) {
+  console.error(`Firebase config is missing: ${missing.join(', ')}. Add the VITE_FIREBASE_* variables in the deployment settings.`)
 }
 
-export const app = initializeApp(firebaseConfig)
+// Keep the app renderable when deployment variables are absent. Auth is disabled
+// below so users see a clear configuration message instead of a blank page.
+const safeConfig = firebaseConfigMissing ? {
+  apiKey: 'missing-firebase-config',
+  authDomain: 'missing-firebase-config.firebaseapp.com',
+  projectId: 'missing-firebase-config',
+  storageBucket: 'missing-firebase-config.appspot.com',
+  messagingSenderId: 'missing',
+  appId: 'missing'
+} : firebaseConfig
+
+export const app = initializeApp(safeConfig)
 export const auth = getAuth(app)
 export const db = getFirestore(app)
 
