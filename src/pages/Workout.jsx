@@ -24,6 +24,7 @@ export default function Workout() {
   const [notes, setNotes] = useState('')
   const [sessionError, setSessionError] = useState('')
   const [previousLogs, setPreviousLogs] = useState([])
+  const [sessionReady, setSessionReady] = useState(false)
   const [savingSet, setSavingSet] = useState(false)
   const timerRef = useRef(null)
   const startedAtRef = useRef(Date.now())
@@ -33,7 +34,7 @@ export default function Workout() {
     if (!day) { nav('/'); return }
     let cancelled = false
     startSession(user.uid, day.name, state.planId)
-      .then(id => { if (!cancelled) setSessionId(id) })
+      .then(id => { if (!cancelled) { setSessionId(id); setSessionReady(true) } })
       .catch(err => { if (!cancelled) setSessionError('Workout session could not be saved yet. You can continue entering sets, then retry the save.') })
     track('workout_started', { workout_name: day.name, exercise_count: day.exerciseIds.length })
     resetSetsForExercise(0)
@@ -188,7 +189,7 @@ export default function Workout() {
       <main>
         {sessionError && <p className="error" role="alert">{sessionError}</p>}
         <div className="eyebrow">EXERCISE {exerciseIndex + 1} / {day.exerciseIds.length}</div>
-        <h2>{currentExercise.name}</h2>
+        <div className="workout-heading"><div><h2>{currentExercise.name}</h2><p className="muted">{sessionReady ? 'Session ready — log your first set.' : 'Preparing your session…'}</p></div><span className={sessionReady ? 'ready-badge' : 'ready-badge is-loading'}>{sessionReady ? 'READY' : 'SYNCING'}</span></div>
         <p className="muted">Target: {currentExercise.repRange} reps • {currentExercise.sets} working sets • Rest {currentExercise.restSeconds}s</p>
 
         <ExerciseMedia

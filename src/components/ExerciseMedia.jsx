@@ -7,7 +7,7 @@ function StepImage({ src, alt, label }) {
   return (
     <div className="exercise-step">
       <div className="exercise-visual">
-        <img src={src} alt={`${alt} — ${label.toLowerCase()}`} loading="eager" />
+        <img src={src} alt={`${alt} — ${label.toLowerCase()}`} loading="eager" decoding="async" onError={(event) => { event.currentTarget.src = '/exercise-images/generic-start.svg' }} />
       </div>
       <p>{label}</p>
     </div>

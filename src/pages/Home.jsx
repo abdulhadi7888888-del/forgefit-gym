@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { getActivePlan, savePlan, getRecentSessions, getLogsSince } from '../lib/data'
 import { updatePlan } from '../lib/customData'
 import { generatePlan, todaysWorkout, getProgramDay, durationLabel } from '../lib/planGenerator'
+import { cachePlan, readCachedPlan } from '../lib/offline'
 import { exercises } from '../data/exercises'
 import TabBar from '../components/TabBar'
 
@@ -15,8 +16,11 @@ function dateKeyDaysAgo(n) {
 export default function Home() {
   const { user, profile } = useAuth()
   const nav = useNavigate()
-  const [plan, setPlan] = useState(null)
-  const [today, setToday] = useState(null)
+  const [plan, setPlan] = useState(() => readCachedPlan(user?.uid))
+  const [today, setToday] = useState(() => {
+    const cached = readCachedPlan(user?.uid)
+    return cached ? todaysWorkout(cached) : null
+  })
   const [logs, setLogs] = useState([])
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
@@ -29,8 +33,26 @@ export default function Home() {
     let cancelled = false
 
     async function load() {
-      setLoading(true)
+      const cached = readCachedPlan(user.uid)
+      setLoading(!cached)
       setError(null)
+
+      // Render a usable workout immediately; Firestore can refresh it in the background.
+      if (cached) {
+        setPlan(cached)
+        setToday(todaysWorkout(cached))
+      } else if (profile) {
+        const instantPlan = { id: null, ...generatePlan({
+          daysPerWeek: profile.trainingFrequency || 3,
+          equipment: profile.equipment || [],
+          exerciseLibrary: exercises,
+          fitnessLevel: profile.fitnessLevel || 'beginner',
+          durationDays: profile.programDurationDays || 90
+        }) }
+        setPlan(instantPlan)
+        setToday(todaysWorkout(instantPlan))
+        setLoading(false)
+      }
 
       // Never leave the dashboard stuck forever when Firestore/network is
       // unavailable. Firestore reads do not expose an AbortSignal, so a
@@ -108,8 +130,11 @@ export default function Home() {
           }
         }
 
-        setPlan(p)
-        setToday(todaysWorkout(p))
+        if (p) {
+          setPlan(p)
+          setToday(todaysWorkout(p))
+          cachePlan(user.uid, p)
+        }
         // The dashboard shell and today's workout must render independently of
         // optional analytics/history queries. Never keep the whole app behind a
         // Firestore stats request.
