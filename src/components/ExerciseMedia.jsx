@@ -7,9 +7,9 @@ function StepImage({ src, alt, label }) {
   return (
     <div className="exercise-step">
       <div className="exercise-visual">
-        <img src={src} alt={`${alt} — ${label.toLowerCase()}`} loading="eager" decoding="async" onError={(event) => { event.currentTarget.style.display = 'none' }} />
+        <img src={src} alt={`${alt} — ${label.toLowerCase()}`} loading="eager" decoding="async" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/exercise-images/row-start-real.png' }} />
       </div>
-      <p>{label}</p><small className="media-caption">REALISTIC GYM PHOTO · {label === 'STEP 1 · START' ? 'SETUP POSITION' : 'FINISH POSITION'}</small>
+      <p>{label}</p><small className="media-caption">REAL PHOTO · {label === 'STEP 1 · START' ? 'SETUP POSITION' : 'FINISH POSITION'}</small>
     </div>
   )
 }

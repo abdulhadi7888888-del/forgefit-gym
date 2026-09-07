@@ -75,7 +75,14 @@ export default function ExerciseDetail() {
     'Exhale through the effort, inhale as you return, and stop the set if your form changes.',
     `Complete ${exercise.defaultSets} sets of ${exercise.repRange} with ${exercise.restSeconds} seconds of rest.`
   ])
-  const tips = [...(exercise.safetyTips || []), ...(exercise.mistakes || []).map(m => `Avoid: ${m}`),
+  const specificTips = /row/i.test(exercise.name)
+    ? ['Keep your chest against the pad and pull toward your lower ribs.', 'Do not shrug or swing; pause briefly when the handles reach your body.']
+    : /bench|press/i.test(exercise.name)
+      ? ['Keep your shoulder blades set and lower the weight under control.', 'Use a spotter for heavy barbell sets and do not bounce the bar.']
+      : /squat|lunge/i.test(exercise.name)
+        ? ['Keep your whole foot planted and let your knees track over your toes.', 'Brace before each rep and stop depth if your back position changes.']
+        : ['Set your position before adding load and move through a pain-free range.', 'Use a controlled tempo; stop the set when technique changes.']
+  const tips = [...specificTips, ...(exercise.safetyTips || []), ...(exercise.mistakes || []).map(m => `Avoid: ${m}`),
     'Choose a load that lets you own every rep.',
     'Keep the movement smooth instead of chasing momentum.',
     'Warm up first and use a lighter variation if anything feels painful.'
