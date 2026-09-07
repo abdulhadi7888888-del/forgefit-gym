@@ -118,16 +118,17 @@ export async function findExerciseMedia({ id, name } = {}) {
 
 function localMediaFor({ id, name } = {}) {
   const value = `${id || ''} ${name || ''}`.toLowerCase()
-  let file = 'row.png'
-  if (/bench|chest|fly|push.?up|dip/.test(value)) file = 'chest-bench.png'
-  else if (/shoulder|overhead|lateral|front.?raise|arnold|press/.test(value)) file = 'shoulder-press.png'
-  else if (/squat|lunge|leg|calf|glute|hamstring|deadlift/.test(value)) file = 'squat.png'
-  else if (/plank|crunch|sit.?up|ab|mountain/.test(value)) file = 'push-up.png'
+  let file = 'machine-row-real.png'
+  if (/bench|chest|fly|push.?up|dip/.test(value)) file = /push.?up/.test(value) ? 'pushup-real.png' : 'chest-press-real.png'
+  else if (/shoulder|overhead|lateral|front.?raise|arnold|press/.test(value)) file = 'overhead-press-real.png'
+  else if (/deadlift|rdl|hinge|good.?morning/.test(value)) file = 'deadlift-real.png'
+  else if (/squat|lunge|leg|calf|glute|hamstring/.test(value)) file = 'squat-real.png'
+  else if (/plank|crunch|sit.?up|ab|mountain/.test(value)) file = 'pushup-real.png'
   return {
     imageUrlStart: `/exercise-images/${file}`,
     imageUrlEnd: `/exercise-images/${file}`,
     imageUrl: `/exercise-images/${file}`,
-    source: 'ForgeFit realistic media'
+    source: 'ForgeFit realistic gym photo'
   }
 }
 
