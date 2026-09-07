@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
-import { auth, db, watchAuthState } from '../lib/firebase'
+import { auth, db, watchAuthState, firebaseConfigMissing } from '../lib/firebase'
 import { track } from '../lib/analytics'
 
 const AuthContext = createContext(null)
@@ -17,6 +17,11 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (firebaseConfigMissing) {
+      setLoading(false)
+      return undefined
+    }
+
     const unsub = watchAuthState(async (u) => {
       setUser(u)
       if (!u) {

@@ -30,14 +30,24 @@ const firebaseConfig = {
 const missing = Object.entries(firebaseConfig)
   .filter(([k, v]) => k !== 'measurementId' && !v)
   .map(([k]) => k)
-if (missing.length) {
-  // Loud, early failure beats a silent broken auth screen later.
-  console.error(
-    `Firebase config is missing: ${missing.join(', ')}. Copy .env.example to .env and fill it in.`
-  )
+export const firebaseConfigMissing = missing.length > 0
+
+if (firebaseConfigMissing) {
+  console.error(`Firebase config is missing: ${missing.join(', ')}. Add the VITE_FIREBASE_* variables in the deployment settings.`)
 }
 
-export const app = initializeApp(firebaseConfig)
+// Keep the app renderable when deployment variables are absent. Auth is disabled
+// below so users see a clear configuration message instead of a blank page.
+const safeConfig = firebaseConfigMissing ? {
+  apiKey: 'missing-firebase-config',
+  authDomain: 'missing-firebase-config.firebaseapp.com',
+  projectId: 'missing-firebase-config',
+  storageBucket: 'missing-firebase-config.appspot.com',
+  messagingSenderId: 'missing',
+  appId: 'missing'
+} : firebaseConfig
+
+export const app = initializeApp(safeConfig)
 export const auth = getAuth(app)
 export const db = getFirestore(app)
 
