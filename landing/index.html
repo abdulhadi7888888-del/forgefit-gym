@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d10">
+<title>ForgeFit Gym — Build Your Strongest Self</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<style>
+:root{--bg:#090b0e;--card:#12161b;--card2:#181d23;--text:#f5f7fa;--muted:#9aa4af;--line:#28303a;--accent:#e8ff3d;--danger:#ff5b67;--ok:#43d17d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.wrap{max-width:520px;margin:auto}
+a{color:inherit;text-decoration:none}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:10;background:rgba(9,11,14,.92);backdrop-filter:blur(16px);padding:18px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
+.brand{font-weight:900;font-size:20px;letter-spacing:-.5px}.brand span{color:var(--accent)}
+.nav-login{border:1px solid var(--line);background:var(--card2);color:var(--text);padding:9px 16px;border-radius:12px;font-weight:800;font-size:13px}
+
+/* HERO */
+.hero{padding:50px 22px 30px;text-align:center}
+.eyebrow{color:var(--accent);font-size:12px;font-weight:800;letter-spacing:1.6px}
+.hero h1{font-size:36px;line-height:1.08;margin:12px 0}
+.hero p{color:var(--muted);font-size:15px;max-width:380px;margin:0 auto 26px}
+.cta-row{display:flex;flex-direction:column;gap:10px;align-items:center}
+.btn{display:inline-block;text-align:center;border:0;border-radius:15px;padding:16px 26px;font-weight:900;cursor:pointer;font-size:15px;width:100%;max-width:320px}
+.btn-primary{background:var(--accent);color:#0a0c0e}
+.btn-secondary{background:var(--card2);color:var(--text);border:1px solid var(--line)}
+
+/* FEATURES */
+.section{padding:36px 22px}
+.section h2{font-size:24px;text-align:center;margin-bottom:6px}
+.section .sub{color:var(--muted);text-align:center;font-size:14px;margin-bottom:26px}
+.features{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.feature{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px}
+.feature .icon{font-size:26px;margin-bottom:8px}
+.feature h3{font-size:14px;margin-bottom:4px}
+.feature p{font-size:12px;color:var(--muted);line-height:1.4}
+
+/* PRICING */
+.plan{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;margin:16px 0;position:relative}
+.plan.featured{background:linear-gradient(145deg,#1c2229,#101318);border-color:var(--accent)}
+.badge{position:absolute;top:-12px;right:20px;background:var(--accent);color:#0a0c0e;font-weight:900;font-size:11px;padding:5px 12px;border-radius:999px;letter-spacing:.5px}
+.plan h3{font-size:19px;margin-bottom:2px}
+.strike{color:var(--muted);text-decoration:line-through;font-size:14px}
+.price{font-size:30px;font-weight:900;margin:8px 0 2px}
+.price small{font-size:13px;color:var(--muted);font-weight:600}
+.total-line{font-size:13px;color:var(--ok);font-weight:700;margin-bottom:12px}
+.plan ul{list-style:none;margin:14px 0}
+.plan li{padding:7px 0;border-bottom:1px solid var(--line);color:#d7dce1;font-size:13px}
+.plan li:last-child{border:0}
+.plan li:before{content:"✓ ";color:var(--accent);font-weight:900}
+
+/* CONTACT */
+.contact-card{background:var(--card2);border:1px solid var(--line);border-radius:18px;padding:20px;text-align:center;margin-top:10px}
+.contact-card a{color:var(--accent);font-weight:800}
+
+footer{text-align:center;color:var(--muted);font-size:12px;padding:28px 20px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav>
+    <div class="brand" style="display:flex;align-items:center;gap:8px"><img src="assets/icon-192.png" alt="ForgeFit Gym logo" width="28" height="28" style="border-radius:8px">FORGE<span>FIT</span> GYM</div>
+    <a href="/login" class="nav-login">Log In</a>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <span class="eyebrow">GYM WORKOUT PLANNER</span>
+    <h1>Build Your<br>Strongest Self.</h1>
+    <p>Personalized workout plans, a 500+ exercise library, real progress tracking, and an AI coach — all in one app.</p>
+    <div class="cta-row">
+      <a href="/login" class="btn btn-primary">START FREE — 30 DAYS</a>
+      <a href="#pricing" class="btn btn-secondary">SEE PRICING</a>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section">
+    <h2>Everything you need</h2>
+    <p class="sub">One app, no guesswork.</p>
+    <div class="features">
+      <div class="feature"><div class="icon">🏋️</div><h3>Smart Plans</h3><p>Auto-generated schedule based on your goal, level and equipment.</p></div>
+      <div class="feature"><div class="icon">💪</div><h3>Exercise Library</h3><p>150+ exercises with sets, reps and rest built in.</p></div>
+      <div class="feature"><div class="icon">📊</div><h3>Real Progress</h3><p>Weight, volume, PRs and 1RM tracked from your actual logs.</p></div>
+      <div class="feature"><div class="icon">🤖</div><h3>AI Coach</h3><p>Ask anything — answers use your real training history.</p></div>
+      <div class="feature"><div class="icon">⏱️</div><h3>Rest Timer</h3><p>Automatic countdown between sets, tuned per exercise.</p></div>
+      <div class="feature"><div class="icon">📴</div><h3>Works Offline</h3><p>Log sets with no signal — syncs the moment you're back online.</p></div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="section" id="pricing">
+    <h2>Choose your plan</h2>
+    <p class="sub">Start free. Lock in a discount for longer commitments.</p>
+
+    <!-- FREE -->
+    <div class="plan featured">
+      <div class="badge">30 DAYS FREE</div>
+      <h3>Free Trial</h3>
+      <div class="price">Rs 0 <small>/ 30 days</small></div>
+      <ul>
+        <li>Full workout planner</li>
+        <li>Exercise library & logging</li>
+        <li>Progress tracking</li>
+        <li>No card required</li>
+      </ul>
+      <a href="/login" class="btn btn-primary">START FREE</a>
+    </div>
+
+    <!-- MONTHLY -->
+    <div class="plan">
+      <h3>Monthly</h3>
+      <div class="price">Rs 8,000 <small>/ month</small></div>
+      <div class="total-line">Billed every month, no commitment</div>
+      <ul>
+        <li>Everything in Free</li>
+        <li>AI Coach</li>
+        <li>Advanced analytics</li>
+        <li>Unlimited custom workouts</li>
+      </ul>
+      <button class="btn btn-primary" onclick="payVia('Monthly', 8000, 1)">SUBSCRIBE — Rs 8,000</button>
+    </div>
+
+    <!-- 6-MONTH -->
+    <div class="plan featured">
+      <div class="badge">SAVE 37.5%</div>
+      <h3>6-Month Plan</h3>
+      <div class="strike">Rs 8,000/mo regular</div>
+      <div class="price">Rs 5,000 <small>/ month</small></div>
+      <div class="total-line">Rs 30,000 total for 6 months — you save Rs 18,000</div>
+      <ul>
+        <li>Everything in Monthly</li>
+        <li>Price locked for 6 months</li>
+        <li>Priority WhatsApp support</li>
+      </ul>
+      <button class="btn btn-primary" onclick="payVia('6-Month', 30000, 6)">SUBSCRIBE — Rs 30,000 (6 mo)</button>
+    </div>
+
+    <!-- 12-MONTH -->
+    <div class="plan">
+      <div class="badge">SAVE 50%</div>
+      <h3>12-Month Plan</h3>
+      <div class="strike">Rs 8,000/mo regular</div>
+      <div class="price">Rs 4,000 <small>/ month</small></div>
+      <div class="total-line">Rs 48,000 total for 12 months — you save Rs 48,000</div>
+      <ul>
+        <li>Everything in 6-Month Plan</li>
+        <li>Best value per month</li>
+        <li>Price locked for a full year</li>
+      </ul>
+      <button class="btn btn-primary" onclick="payVia('12-Month', 48000, 12)">SUBSCRIBE — Rs 48,000 (12 mo)</button>
+    </div>
+
+    <div class="contact-card">
+      <p style="margin-bottom:8px;color:var(--muted);font-size:13px">Pay via bank transfer / JazzCash / EasyPaisa, then send your slip:</p>
+      <p>📱 WhatsApp: <a href="https://wa.me/923134586476" target="_blank" rel="noopener">+92 313 4586476</a></p>
+      <p>✉️ Email: <a href="mailto:abdulhadi7888888@gmail.com">abdulhadi7888888@gmail.com</a></p>
+      <p style="margin-top:8px;color:var(--muted);font-size:12px">Access is activated within 24 hours of slip verification.</p>
+    </div>
+  </section>
+
+  <footer>
+    © ForgeFit Gym. Plans lock automatically when a billing period ends — renew anytime via WhatsApp to restore access instantly.
+  </footer>
+
+</div>
+
+<script>
+function payVia(planName, amount, months) {
+  const message = `Hi, I want to subscribe to the ForgeFit Gym ${planName} Plan — Rs ${amount.toLocaleString()} for ${months} month(s). I will send my payment slip here.`;
+  const whatsappUrl = `https://wa.me/923134586476?text=${encodeURIComponent(message)}`;
+  window.open(whatsappUrl, '_blank');
+}
+</script>
+</body>
+</html>

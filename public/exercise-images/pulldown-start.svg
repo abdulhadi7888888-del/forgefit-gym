@@ -1,0 +1,12 @@
+<svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg">
+<ellipse cx="80" cy="188" rx="46" ry="6" fill="#edeae2"/>
+<polyline points="80,65 80,118" fill="none" stroke="#ff4d23" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="80,65 80,18" fill="none" stroke="#ff4d23" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="80,118 80,185" fill="none" stroke="#ff4d23" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="80" cy="38" r="11" stroke="#ff4d23" stroke-width="7" fill="#fff"/>
+<g stroke="#9a9488" stroke-width="4" stroke-linecap="round">
+      <circle cx="23" cy="7" r="5" fill="none"/>
+      <line x1="23" y1="12" x2="23" y2="24"/>
+      <line x1="14" y1="24" x2="32" y2="24"/>
+    </g>
+</svg>

@@ -1,0 +1,136 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // ---------- users ----------
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid);
+      // users may update their own doc, but never their own role or isPremium flag
+      allow update: if isOwner(uid)
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.isPremium == resource.data.isPremium;
+      allow delete: if isOwner(uid) || isAdmin();
+    }
+
+    // ---------- profiles ----------
+    match /profiles/{uid} {
+      allow read, write: if isOwner(uid);
+      allow read: if isAdmin();
+    }
+
+    // ---------- global exercise library ----------
+    match /exercises/{exerciseId} {
+      allow read: if true; // public library, readable by anyone (including guests)
+      allow write: if isAdmin();
+    }
+
+    // ---------- per-user custom exercises ----------
+    match /customExercises/{uid}/items/{exerciseId} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // ---------- workout plans ----------
+    match /workoutPlans/{uid}/plans/{planId} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // ---------- workout sessions ----------
+    match /workoutSessions/{uid}/sessions/{sessionId} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // ---------- exercise logs (sets) ----------
+    match /exerciseLogs/{uid}/logs/{logId} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // ---------- personal records ----------
+    // Clients may only ever increase a PR via a Cloud Function in production;
+    // for now allow the owner to write, but never allow lowering a value once achieved.
+    match /personalRecords/{uid}/records/{exerciseId} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid);
+      allow update: if isOwner(uid)
+        && request.resource.data.bestWeightKg >= resource.data.bestWeightKg;
+    }
+
+    // ---------- body weight ----------
+    match /bodyWeight/{uid}/entries/{entryId} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // ---------- body measurements (chest, waist, arms, thighs, shoulders, body fat) ----------
+    match /measurements/{uid}/entries/{entryId} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // ---------- cardio ----------
+    match /cardioLogs/{uid}/entries/{entryId} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // ---------- favorites ----------
+    match /favorites/{uid}/items/{itemId} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // ---------- notification preferences ----------
+    match /notificationPrefs/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // ---------- notifications ----------
+    // Regular delivery (PR alerts, missed-workout reminders) comes from Cloud
+    // Functions using the admin SDK, which bypasses rules entirely. Admins are
+    // additionally allowed to create notifications directly for the broadcast
+    // tool in the admin panel.
+    match /notifications/{uid}/items/{notificationId} {
+      allow read: if isOwner(uid);
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow create: if isAdmin();
+      allow delete: if false;
+    }
+
+    // ---------- AI coach conversation log ----------
+    match /aiCoachLogs/{uid}/messages/{messageId} {
+      allow read: if isOwner(uid);
+      allow write: if false; // written only by the askCoach Cloud Function
+    }
+
+    // ---------- subscriptions ----------
+    // Client can read its own status, but can NEVER write verifiedServerSide,
+    // expiresAt, or tier directly — only a Cloud Function (admin SDK, bypasses rules)
+    // may set those after validating the App Store / Play receipt.
+    match /subscriptions/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
+    // ---------- admin role assignment ----------
+    match /admins/{uid} {
+      allow read: if isSignedIn();
+      // Only the app owner's exact Google account may self-grant admin, and
+      // only on their own uid document. Everyone else must be added via the
+      // Firebase console / Cloud Function.
+      allow write: if isSignedIn()
+        && request.auth.uid == uid
+        && request.auth.token.email == 'abdulhadi7888888@gmail.com';
+    }
+  }
+}
