@@ -69,8 +69,17 @@ export default function ExerciseDetail() {
 
   // Instructions can arrive either as a `steps` array (custom/admin-authored
   // exercises) or an `instructions` array (older shape) — normalize to one list.
-  const instructionSteps = (exercise.steps?.length ? exercise.steps : exercise.instructions?.length ? exercise.instructions : [])
-  const tips = [...(exercise.safetyTips || []), ...(exercise.mistakes || []).map(m => `Avoid: ${m}`)]
+  const instructionSteps = (exercise.steps?.length ? exercise.steps : exercise.instructions?.length ? exercise.instructions : [
+    `Set up with your ${exercise.primaryMuscle.toLowerCase()} braced and your ${exercise.equipment.toLowerCase()} secure.`,
+    'Move through a controlled range of motion; keep the working muscle under tension.',
+    'Exhale through the effort, inhale as you return, and stop the set if your form changes.',
+    `Complete ${exercise.defaultSets} sets of ${exercise.repRange} with ${exercise.restSeconds} seconds of rest.`
+  ])
+  const tips = [...(exercise.safetyTips || []), ...(exercise.mistakes || []).map(m => `Avoid: ${m}`),
+    'Choose a load that lets you own every rep.',
+    'Keep the movement smooth instead of chasing momentum.',
+    'Warm up first and use a lighter variation if anything feels painful.'
+  ]
   const maxVolume = history.length ? Math.max(...history.map(h => h.volume || h.weightKg * h.reps)) : 0
   const prChartData = pr ? [
     { label: 'Max weight (kg)', value: pr.bestWeightKg },
@@ -81,11 +90,12 @@ export default function ExerciseDetail() {
   return (
     <div className="app">
       <header>
-        <button className="secondary" onClick={() => nav(-1)}>BACK</button>
-        <button className="secondary" onClick={handleFavorite} disabled={favoriteSaving}>{favId ? 'Saved' : 'Save'}</button>
+        <button className="secondary" onClick={() => nav(-1)}>← BACK</button>
+        <button className="secondary" onClick={handleFavorite} disabled={favoriteSaving}>{favId ? 'SAVED' : 'SAVE EXERCISE'}</button>
       </header>
       <main>
-        <h1>{exercise.name}</h1>
+        <div className="eyebrow">EXERCISE GUIDE</div>
+        <div className="detail-title-row"><div><h1>{exercise.name}</h1><p className="muted">{exercise.primaryMuscle} · {exercise.equipment} · {exercise.difficulty}</p></div><span className={`difficulty difficulty-${exercise.difficulty}`}>{exercise.difficulty}</span></div>
         {loadError && <p className="error">{loadError}</p>}
 
         <ExerciseMedia
@@ -104,6 +114,8 @@ export default function ExerciseDetail() {
         </div>
 
         {tab === 'Overview' && (
+          <>
+          <div className="detail-quick-actions"><button className="primary" onClick={() => nav(`/workout?exercise=${slug}`)}>ADD TO WORKOUT</button><button className="secondary" onClick={handleFavorite}>{favId ? 'SAVED TO FAVORITES' : 'SAVE FOR LATER'}</button></div>
           <div className="card">
             <div className="row"><span className="muted">Main muscle</span><span>{exercise.primaryMuscle}</span></div>
             {exercise.secondaryMuscles?.length > 0 && (
@@ -113,6 +125,7 @@ export default function ExerciseDetail() {
             <div className="row" style={{ marginTop: 8 }}><span className="muted">Difficulty</span><span>{exercise.difficulty}</span></div>
             <div className="row" style={{ marginTop: 8 }}><span className="muted">Suggested</span><span>{exercise.defaultSets} sets × {exercise.repRange}</span></div>
             <div className="row" style={{ marginTop: 8 }}><span className="muted">Rest</span><span>{exercise.restSeconds}s</span></div>
+            <div className="coach-note"><strong>COACHING CUE</strong><span>Brace first. Control the lowering phase. Drive through the target muscle.</span></div>
             {pr && (
               <div className="row" style={{ marginTop: 8 }}>
                 <span className="muted">Personal record</span>
@@ -132,6 +145,7 @@ export default function ExerciseDetail() {
               </div>
             )}
           </div>
+          </>
         )}
 
         {tab === 'Instructions' && (
