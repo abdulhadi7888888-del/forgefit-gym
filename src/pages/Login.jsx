@@ -63,8 +63,9 @@ export default function Login() {
   return (
     <div className="app">
       <main>
-        <div className="eyebrow">FORGEFIT</div>
-        <h1>{mode === 'login' ? 'Welcome back' : 'Create your account'}</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 42 }}><img src="/icon-192.png" alt="ForgeFit Gym logo" width="38" height="38" style={{ borderRadius: 11 }} /><div className="brand">FORGE<span>FIT</span> GYM</div></div>
+        <div className="eyebrow">MEMBER ACCESS</div>
+        <h1>{mode === 'login' ? 'Welcome back.' : 'Start strong.'}</h1>
 
         <form onSubmit={handleSubmit}>
           <div className="field">

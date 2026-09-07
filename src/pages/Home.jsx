@@ -216,7 +216,8 @@ export default function Home() {
             : new Date().toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase()}
           {!isProgram && (today ? ` • ${today.name.toUpperCase()}` : ' • REST')}
         </div>
-        <h1>Build your<br />strongest self.</h1>
+        <div className="eyebrow" style={{ marginTop: 26 }}>MEMBER DASHBOARD</div>
+        <h1>Build your<br /><span style={{ color: 'var(--accent)' }}>strongest self.</span></h1>
 
         {programComplete ? (
           <div className="card today">
