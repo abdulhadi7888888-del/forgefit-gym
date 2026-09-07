@@ -6,7 +6,6 @@ import { updatePlan } from '../lib/customData'
 import { generatePlan, todaysWorkout, getProgramDay, durationLabel } from '../lib/planGenerator'
 import { exercises } from '../data/exercises'
 import TabBar from '../components/TabBar'
-import { findExerciseMedia } from '../lib/exerciseMedia'
 
 function dateKeyDaysAgo(n) {
   const d = new Date(); d.setDate(d.getDate() - n)
@@ -145,14 +144,8 @@ export default function Home() {
       setPreviewImage(null)
       return undefined
     }
-    // Show the bundled start image immediately; upgrade to the real remote
-    // catalog image when it is available. This keeps the home screen visual
-    // even on slow/offline connections.
     const local = exercises.find(e => e.slug === first.exerciseId)?.imageUrlStart || null
     setPreviewImage(local)
-    findExerciseMedia({ id: first.exerciseId, name: first.name }).then(media => {
-      if (!cancelled && media) setPreviewImage(media.imageUrlStart || media.imageUrl || local)
-    })
     return () => { cancelled = true }
   }, [today])
 

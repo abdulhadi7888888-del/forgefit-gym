@@ -1,30 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { exercises, muscleGroups } from '../data/exercises'
 import { track } from '../lib/analytics'
 import TabBar from '../components/TabBar'
 import ExerciseThumb from '../components/ExerciseThumb'
-import { loadRepdbExercises } from '../lib/repdbCatalog'
 
 export default function Exercises() {
   const [q, setQ] = useState('')
   const [muscle, setMuscle] = useState('All')
   const [equipment, setEquipment] = useState('All')
   const [difficulty, setDifficulty] = useState('All')
-  const [fullCatalog, setFullCatalog] = useState(exercises)
-  const [catalogLoading, setCatalogLoading] = useState(true)
+  const fullCatalog = exercises
   const nav = useNavigate()
-
-  useEffect(() => {
-    let active = true
-    loadRepdbExercises().then(remote => {
-      if (!active) return
-      const bySlug = new Map(exercises.map(e => [e.slug, e]))
-      remote.forEach(e => { if (!bySlug.has(e.slug)) bySlug.set(e.slug, e) })
-      setFullCatalog([...bySlug.values()])
-    }).finally(() => { if (active) setCatalogLoading(false) })
-    return () => { active = false }
-  }, [])
 
   const filtered = fullCatalog.filter(e => {
     const matchesQ = (e.name + e.primaryMuscle + e.equipment).toLowerCase().includes(q.toLowerCase())
@@ -44,7 +31,7 @@ export default function Exercises() {
       <header><div className="brand" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><img src="/icon-192.png" alt="ForgeFit Gym logo" width="28" height="28" style={{ borderRadius: 8 }} />FORGE<span>FIT</span> GYM</div></header>
       <main>
         <div className="eyebrow">LIBRARY</div>
-        <h1>{catalogLoading ? `${exercises.length}+ exercises` : `${fullCatalog.length} exercises`}</h1>
+        <h1>{fullCatalog.length} exercises</h1>
         <input className="search" placeholder="Search exercise, muscle or equipment…"
           value={q} onChange={e => handleSearch(e.target.value)} />
         <div className="chips" style={{ margin: '12px 0' }}>
@@ -56,7 +43,7 @@ export default function Exercises() {
           <select value={equipment} onChange={e => setEquipment(e.target.value)} style={{ flex: 1 }}><option>All</option>{[...new Set(fullCatalog.map(x => x.equipment))].sort().map(x => <option key={x}>{x}</option>)}</select>
           <select value={difficulty} onChange={e => setDifficulty(e.target.value)} style={{ flex: 1 }}><option>All</option><option>beginner</option><option>intermediate</option><option>advanced</option></select>
         </div>
-        <p className="muted" style={{ marginTop: 0 }}>{filtered.length} exercises found • {catalogLoading ? 'Loading the full illustrated catalog…' : 'Every listed exercise has demonstration media'}</p>
+        <p className="muted" style={{ marginTop: 0 }}>{filtered.length} exercises found • Every listed exercise has demonstration media</p>
         <div className="row" style={{ margin: '10px 0' }}>
           <Link to="/custom-exercise" className="secondary" style={{ textDecoration: 'none', display: 'block', textAlign: 'center', width: '48%' }}>+ CUSTOM EXERCISE</Link>
           <Link to="/history" className="secondary" style={{ textDecoration: 'none', display: 'block', textAlign: 'center', width: '48%' }}>WORKOUT HISTORY</Link>
@@ -74,7 +61,6 @@ export default function Exercises() {
             </div>
           ))}
         </div>
-        <p className="muted exercise-credit">Exercise data by <a href="https://repdb.co" target="_blank" rel="noreferrer">RepDB</a>.</p>
       </main>
       <TabBar active="exercises" />
     </div>

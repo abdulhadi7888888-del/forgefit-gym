@@ -6,7 +6,7 @@ import { collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebas
 import { db } from '../lib/firebase'
 import { getFavorites, toggleFavorite } from '../lib/customData'
 import ExerciseMedia from '../components/ExerciseMedia'
-import { findRepdbExercise } from '../lib/repdbCatalog'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
 const TABS = ['Overview', 'Instructions', 'Tips', 'History']
 
@@ -26,19 +26,15 @@ export default function ExerciseDetail() {
   useEffect(() => {
     async function load() {
       try {
-        if (!staticExercise) {
-          const remote = await findRepdbExercise(slug)
-          if (remote) setLiveExercise(remote)
-        }
-      } catch (err) { console.warn('RepDB exercise unavailable:', err) }
-      try {
         const exSnap = await getDoc(doc(db, 'exercises', slug))
         setLiveExercise(exSnap.exists() ? exSnap.data() : null)
       } catch (err) { console.warn('Live exercise data unavailable:', err) }
       try {
         const q = query(collection(db, 'exerciseLogs', user.uid, 'logs'), where('exerciseId', '==', slug), orderBy('timestamp', 'desc'))
         const snap = await getDocs(q)
-        setHistory(snap.docs.slice(0, 10).map(d => d.data()))
+        // Fetch generously (not just the last 10) so the max-volume bar below
+        // reflects the exercise's true best set, not only recent ones.
+        setHistory(snap.docs.slice(0, 100).map(d => d.data()))
       } catch (err) { console.warn('Exercise history unavailable:', err) }
       try {
         const prSnap = await getDoc(doc(db, 'personalRecords', user.uid, 'records', slug))
@@ -75,6 +71,12 @@ export default function ExerciseDetail() {
   // exercises) or an `instructions` array (older shape) — normalize to one list.
   const instructionSteps = (exercise.steps?.length ? exercise.steps : exercise.instructions?.length ? exercise.instructions : [])
   const tips = [...(exercise.safetyTips || []), ...(exercise.mistakes || []).map(m => `Avoid: ${m}`)]
+  const maxVolume = history.length ? Math.max(...history.map(h => h.volume || h.weightKg * h.reps)) : 0
+  const prChartData = pr ? [
+    { label: 'Max weight (kg)', value: pr.bestWeightKg },
+    { label: 'Est. 1RM (kg)', value: Number(pr.estimated1RM.toFixed(1)) },
+    { label: 'Max volume (kg)', value: Math.round(maxVolume) }
+  ] : []
 
   return (
     <div className="app">
@@ -84,7 +86,6 @@ export default function ExerciseDetail() {
       </header>
       <main>
         <h1>{exercise.name}</h1>
-        {exercise.source === 'RepDB' && <p className="muted">Exercise data by RepDB</p>}
         {loadError && <p className="error">{loadError}</p>}
 
         <ExerciseMedia
@@ -118,6 +119,18 @@ export default function ExerciseDetail() {
                 <span>{pr.bestWeightKg} kg × {pr.bestReps} • Est. 1RM {pr.estimated1RM.toFixed(1)} kg</span>
               </div>
             )}
+            {pr && (
+              <div style={{ height: 170, marginTop: 14 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={prChartData}>
+                    <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={0} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip />
+                    <Bar dataKey="value" fill="#ff4d23" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
         )}
 
@@ -143,10 +156,13 @@ export default function ExerciseDetail() {
           <div className="card">
             <h3 style={{ marginTop: 0 }}>Recent history</h3>
             {history.length === 0 && <p className="muted">No sets logged yet — this fills in once you train it.</p>}
-            {history.map((h, i) => (
-              <div key={i} className="row" style={{ padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
-                <span className="muted">{h.date}</span>
-                <span>{h.weightKg} kg × {h.reps}</span>
+            {history.slice(0, 15).map((h, i) => (
+              <div key={i} style={{ padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
+                <div className="row">
+                  <span className="muted">{h.date}</span>
+                  <span>{h.weightKg} kg × {h.reps}</span>
+                </div>
+                {h.note && <p className="muted" style={{ margin: '2px 0 0', fontSize: 13 }}>{h.note}</p>}
               </div>
             ))}
           </div>

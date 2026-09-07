@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useLanguage } from '../lib/i18n'
 
 const ICONS = {
   home: (
@@ -35,26 +36,27 @@ const ICONS = {
 }
 
 const TABS = [
-  { id: 'home', label: 'Home', path: '/' },
-  { id: 'workout', label: 'Workout', path: '/workout-builder' },
-  { id: 'exercises', label: 'Exercises', path: '/exercises' },
-  { id: 'progress', label: 'Progress', path: '/progress' },
-  { id: 'profile', label: 'Profile', path: '/profile' }
+  { id: 'home', key: 'nav_home', path: '/' },
+  { id: 'workout', key: 'nav_workout', path: '/workout-builder' },
+  { id: 'exercises', key: 'nav_exercises', path: '/exercises' },
+  { id: 'progress', key: 'nav_progress', path: '/progress' },
+  { id: 'profile', key: 'nav_profile', path: '/profile' }
 ]
 
 export default function TabBar({ active }) {
+  const { t } = useLanguage()
   return (
     <nav className="tabs">
       <div className="tabs-inner">
-        {TABS.map(t => (
+        {TABS.map(t2 => (
           <Link
-            key={t.id}
-            to={t.path}
-            className={`tab ${active === t.id ? 'active' : ''}`}
-            aria-current={active === t.id ? 'page' : undefined}
+            key={t2.id}
+            to={t2.path}
+            className={`tab ${active === t2.id ? 'active' : ''}`}
+            aria-current={active === t2.id ? 'page' : undefined}
           >
-            <span className="tab-icon">{ICONS[t.id]}</span>
-            <span className="tab-label">{t.label}</span>
+            <span className="tab-icon">{ICONS[t2.id]}</span>
+            <span className="tab-label">{t(t2.key)}</span>
           </Link>
         ))}
       </div>

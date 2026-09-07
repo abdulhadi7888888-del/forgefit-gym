@@ -26,6 +26,7 @@ export default function Workout() {
   const [previousLogs, setPreviousLogs] = useState([])
   const [savingSet, setSavingSet] = useState(false)
   const timerRef = useRef(null)
+  const startedAtRef = useRef(Date.now())
   const currentExercise = day?.exerciseIds?.[exerciseIndex] || null
 
   useEffect(() => {
@@ -58,15 +59,17 @@ export default function Workout() {
 
   function resetSetsForExercise(idx) {
     const count = day.exerciseIds[idx].sets
-    setSets(Array.from({ length: count }, () => ({ w: '', r: '', done: false })))
+    setSets(Array.from({ length: count }, () => ({ w: '', r: '', note: '', done: false })))
   }
 
   function updateSet(i, field, value) {
     setSets(s => s.map((set, idx) => idx === i ? { ...set, [field]: value } : set))
   }
 
-  async function completeSet(i) {
-    const s = sets[i]
+  // overrides lets quickLogAll supply values for a row without waiting on a
+  // state update to land first (state updates are async, this call isn't).
+  async function completeSet(i, overrides) {
+    const s = overrides || sets[i]
     const w = Number(s.w), r = Number(s.r)
     if (!w || !r || savingSet) return
     if (!sessionId) { setSessionError('Preparing your workout session. Please wait a moment before logging the set.'); return }
@@ -78,9 +81,10 @@ export default function Workout() {
       exerciseName: currentExercise.name,
       setNumber: i + 1,
       weightKg: w,
-      reps: r
+      reps: r,
+      note: s.note || ''
     })
-      setSets(prev => prev.map((set, idx) => idx === i ? { ...set, done: true } : set))
+      setSets(prev => prev.map((set, idx) => idx === i ? { ...set, w: String(s.w), r: String(s.r), done: true } : set))
       setRestSeconds(currentExercise.restSeconds || 60)
     } catch (err) {
       setSessionError('This set could not be saved. Check your connection and try again.')
@@ -90,7 +94,39 @@ export default function Workout() {
   }
 
   function addSet() {
-    setSets(s => [...s, { w: '', r: '', done: false }])
+    setSets(s => [...s, { w: '', r: '', note: '', done: false }])
+  }
+
+  // Logs every remaining set in one tap. Any row left blank is filled from
+  // the last completed set in this exercise, falling back to what was lifted
+  // last time — same "log all sets in one click" shortcut as the reference
+  // app, so a straight-sets exercise doesn't need a tap per row.
+  async function quickLogAll() {
+    if (savingSet) return
+    const lastDone = [...sets].reverse().find(s => s.done)
+    const fallback = lastDone
+      ? { w: lastDone.w, r: lastDone.r }
+      : previousLogs[0]
+        ? { w: String(previousLogs[0].weightKg), r: String(previousLogs[0].reps) }
+        : null
+
+    const toLog = sets
+      .map((s, idx) => ({ idx, values: { w: s.w || fallback?.w || '', r: s.r || fallback?.r || '', note: s.note } }))
+      .filter(({ idx, values }) => !sets[idx].done && values.w && values.r)
+
+    if (toLog.length === 0) {
+      setSessionError('Enter a weight and reps for at least one set (or log one set normally first) before using Quick Log All.')
+      return
+    }
+
+    setSets(prev => prev.map((set, idx) => {
+      const match = toLog.find(t => t.idx === idx)
+      return match ? { ...set, w: match.values.w, r: match.values.r } : set
+    }))
+
+    for (const { idx, values } of toLog) {
+      await completeSet(idx, values)
+    }
   }
 
   function nextExercise() {
@@ -105,7 +141,8 @@ export default function Workout() {
   async function finish() {
     if (!sessionId) { setSessionError('Your workout session is still preparing. Please wait and try again.'); return }
     try {
-      await finishSession(user.uid, sessionId, feeling, notes)
+      const durationSeconds = Math.round((Date.now() - startedAtRef.current) / 1000)
+      await finishSession(user.uid, sessionId, feeling, notes, durationSeconds)
     track('workout_completed', { workout_name: day.name, feeling })
       nav('/')
     } catch (err) {
@@ -121,6 +158,7 @@ export default function Workout() {
           {sessionError && <p className="error" role="alert">{sessionError}</p>}
           <div className="eyebrow">HOW DID IT GO?</div>
           <h1>Finish workout</h1>
+          <p className="muted" style={{ marginTop: -8 }}>Duration: {formatDuration(Math.round((Date.now() - startedAtRef.current) / 1000))}</p>
           <div className="card">
             <div className="row" style={{ justifyContent: 'space-around', fontSize: 32 }}>
               {FEELINGS.map(f => (
@@ -188,10 +226,19 @@ export default function Workout() {
           <div className="sets">
             <b>SET</b><b>WEIGHT (KG)</b><b>REPS</b><b>DONE</b>
             {sets.map((s, i) => (
-              <FragmentRow key={i} i={i} s={s} onW={v => updateSet(i, 'w', v)} onR={v => updateSet(i, 'r', v)} onComplete={() => completeSet(i)} />
+              <FragmentRow key={i} i={i} s={s}
+                onW={v => updateSet(i, 'w', v)}
+                onR={v => updateSet(i, 'r', v)}
+                onNote={v => updateSet(i, 'note', v)}
+                onComplete={() => completeSet(i)} />
             ))}
           </div>
-          <button className="secondary" style={{ width: '100%', marginTop: 10 }} onClick={addSet}>+ ADD SET</button>
+          <div className="row" style={{ gap: 8, marginTop: 10 }}>
+            <button className="secondary" style={{ flex: 1 }} onClick={addSet}>+ ADD SET</button>
+            <button className="secondary" style={{ flex: 1 }} onClick={quickLogAll} disabled={savingSet}>
+              {savingSet ? 'LOGGING…' : 'QUICK LOG ALL'}
+            </button>
+          </div>
         </div>
 
         {exerciseIndex < day.exerciseIds.length - 1
@@ -202,13 +249,22 @@ export default function Workout() {
   )
 }
 
-function FragmentRow({ i, s, onW, onR, onComplete }) {
+function formatDuration(totalSeconds) {
+  const m = Math.floor(totalSeconds / 60)
+  const s = totalSeconds % 60
+  return m > 0 ? `${m}m ${s}s` : `${s}s`
+}
+
+function FragmentRow({ i, s, onW, onR, onNote, onComplete }) {
   return (
     <>
       <span>{i + 1}</span>
       <input type="number" value={s.w} placeholder="e.g. 20" onChange={e => onW(e.target.value)} disabled={s.done} />
       <input type="number" value={s.r} placeholder="e.g. 8" onChange={e => onR(e.target.value)} disabled={s.done} />
       <button onClick={onComplete} disabled={s.done}>{s.done ? 'DONE' : 'LOG SET'}</button>
+      <input type="text" value={s.note} placeholder="Note for this set (optional)…"
+        onChange={e => onNote(e.target.value)} disabled={s.done}
+        style={{ gridColumn: '1 / -1', fontSize: 13, padding: '6px 9px', marginBottom: 2, opacity: s.done ? 0.6 : 1 }} />
     </>
   )
 }

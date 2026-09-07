@@ -43,11 +43,11 @@ export async function startSession(uid, dayName, planId) {
   return ref.id
 }
 
-export async function logSet(uid, sessionId, { exerciseId, exerciseName, setNumber, weightKg, reps }) {
+export async function logSet(uid, sessionId, { exerciseId, exerciseName, setNumber, weightKg, reps, note = '' }) {
   const volume = weightKg * reps
   const dateKey = new Date().toISOString().slice(0, 10)
   await addDoc(collection(db, 'exerciseLogs', uid, 'logs'), {
-    sessionId, exerciseId, exerciseName, setNumber, weightKg, reps, volume,
+    sessionId, exerciseId, exerciseName, setNumber, weightKg, reps, volume, note,
     date: dateKey, timestamp: serverTimestamp()
   })
   await updateDoc(doc(db, 'workoutSessions', uid, 'sessions', sessionId), {
@@ -72,12 +72,13 @@ async function maybeSetPR(uid, exerciseId, exerciseName, weightKg, reps) {
   return false
 }
 
-export async function finishSession(uid, sessionId, feeling, notes) {
+export async function finishSession(uid, sessionId, feeling, notes, durationSeconds = 0) {
   await updateDoc(doc(db, 'workoutSessions', uid, 'sessions', sessionId), {
     status: 'completed',
     finishedAt: serverTimestamp(),
     feeling: feeling || null,
-    notes: notes || ''
+    notes: notes || '',
+    durationSeconds: durationSeconds || 0
   })
 }
 
@@ -116,6 +117,20 @@ export async function getRecentExerciseLogs(uid, exerciseId, max = 20) {
     .map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (b.timestamp?.toMillis?.() || 0) - (a.timestamp?.toMillis?.() || 0))
     .slice(0, max)
+}
+
+// Every logged set for one session, oldest first — used by History to show
+// the per-set notes a user left ("felt tight in the left shoulder", etc.)
+// underneath the session summary.
+export async function getSessionSetLogs(uid, sessionId) {
+  const q = query(
+    collection(db, 'exerciseLogs', uid, 'logs'),
+    where('sessionId', '==', sessionId)
+  )
+  const snap = await getDocs(q)
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.timestamp?.toMillis?.() || 0) - (b.timestamp?.toMillis?.() || 0))
 }
 
 export async function addBodyWeight(uid, weightKg) {

@@ -1,49 +1,29 @@
-import { useEffect, useRef, useState } from 'react'
-import { findExerciseMedia } from '../lib/exerciseMedia'
+import { useRef, useState } from 'react'
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
-function StepImage({ src, fallbackSrc, alt, label }) {
-  const [currentSrc, setCurrentSrc] = useState(src || fallbackSrc || null)
-
-  useEffect(() => {
-    setCurrentSrc(src || fallbackSrc || null)
-  }, [src, fallbackSrc])
-
-  function handleError() {
-    if (fallbackSrc && currentSrc !== fallbackSrc) setCurrentSrc(fallbackSrc)
-    else setCurrentSrc(null)
-  }
-
-  if (!currentSrc) return null
-
+function StepImage({ src, alt, label }) {
+  if (!src) return null
   return (
     <div className="exercise-step">
       <div className="exercise-visual">
-        <img
-          src={currentSrc}
-          alt={`${alt} — ${label.toLowerCase()}`}
-          loading="eager"
-          onError={handleError}
-        />
+        <img src={src} alt={`${alt} — ${label.toLowerCase()}`} loading="eager" />
       </div>
       <p>{label}</p>
     </div>
   )
 }
 
-function StepImages({ imageUrlStart, imageUrlEnd, imageUrl, remoteStart, remoteEnd, remoteImage, alt }) {
-  const fallbackStart = imageUrlStart || imageUrl || remoteStart || remoteImage
-  const fallbackEnd = imageUrlEnd || imageUrlStart || imageUrl || remoteEnd || remoteStart || remoteImage
-  const start = imageUrlStart || imageUrl || remoteStart || remoteImage
-  const end = imageUrlEnd || imageUrlStart || imageUrl || remoteEnd || remoteStart || remoteImage
+function StepImages({ imageUrlStart, imageUrlEnd, imageUrl, alt }) {
+  const start = imageUrlStart || imageUrl
+  const end = imageUrlEnd || imageUrlStart || imageUrl
 
   if (start || end) {
     return (
       <section className="exercise-demo" aria-label={`${alt} demonstration`}>
         <div className="exercise-steps">
-          <StepImage src={start} fallbackSrc={fallbackStart} alt={alt} label="STEP 1 · START" />
-          <StepImage src={end} fallbackSrc={fallbackEnd} alt={alt} label="STEP 2 · FINISH" />
+          <StepImage src={start} alt={alt} label="STEP 1 · START" />
+          <StepImage src={end} alt={alt} label="STEP 2 · FINISH" />
         </div>
       </section>
     )
@@ -62,37 +42,18 @@ function StepImages({ imageUrlStart, imageUrlEnd, imageUrl, remoteStart, remoteE
   return null
 }
 
-export default function ExerciseMedia({ imageUrl, imageUrlStart, imageUrlEnd, videoUrl, alt, exerciseId }) {
+export default function ExerciseMedia({ imageUrl, imageUrlStart, imageUrlEnd, videoUrl, alt }) {
   const videoRef = useRef(null)
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
   const [muted, setMuted] = useState(true)
   const [progress, setProgress] = useState(0)
-  const [remoteMedia, setRemoteMedia] = useState(null)
-
-  useEffect(() => {
-    let cancelled = false
-    if (!alt || videoUrl) return undefined
-    // Prefer the real RepDB exercise image when available, but keep the local
-    // bundled illustration as an immediate offline fallback.
-    findExerciseMedia({ id: exerciseId, name: alt }).then(media => {
-      if (!cancelled && media) setRemoteMedia(media)
-    })
-    return () => { cancelled = true }
-  }, [alt, exerciseId, videoUrl])
-
-  const resolvedImage = remoteMedia?.imageUrl || imageUrl
-  const resolvedStart = remoteMedia?.imageUrlStart || imageUrlStart
-  const resolvedEnd = remoteMedia?.imageUrlEnd || imageUrlEnd
 
   if (!videoUrl) {
     return <StepImages
       imageUrlStart={imageUrlStart}
       imageUrlEnd={imageUrlEnd}
       imageUrl={imageUrl}
-      remoteStart={remoteMedia?.imageUrlStart}
-      remoteEnd={remoteMedia?.imageUrlEnd}
-      remoteImage={remoteMedia?.imageUrl}
       alt={alt}
     />
   }

@@ -1,8 +1,10 @@
-// Exercise library seed set: 159 real, named gym exercises spanning every
-// major muscle group and common equipment type. This is the starting
-// content shipped in the app; the admin panel (Manage exercises) and
-// scripts/seedExercises.js are how this grows toward the full 500+ over
-// time as real demonstration media is produced/licensed for each one.
+// Exercise library seed set: 159 real, named gym exercises with hand-picked
+// step demo images, spanning every major muscle group and common equipment
+// type. Below this, `expanded` generates ~480 more exercises (mapped to the
+// same demo-image categories via NAME_STEP_CATEGORY further down), bringing
+// the shipped, searchable library to 630+. The admin panel (Manage
+// exercises) and scripts/seedExercises.js are how individual entries get
+// custom media over time.
 export const baseExercises = [
   { slug: 'flat-barbell-bench-press', name: 'Flat Barbell Bench Press', primaryMuscle: 'Chest', secondaryMuscles: ["Triceps", "Shoulders"], equipment: 'Barbell', difficulty: 'intermediate', defaultSets: 4, repRange: '6-10', restSeconds: 90 },
   { slug: 'flat-dumbbell-bench-press', name: 'Flat Dumbbell Bench Press', primaryMuscle: 'Chest', secondaryMuscles: ["Triceps", "Shoulders"], equipment: 'Dumbbell', difficulty: 'intermediate', defaultSets: 4, repRange: '6-10', restSeconds: 90 },
@@ -195,9 +197,8 @@ const expansionTemplates = {
   Calves: ['Standing Calf Raise','Seated Calf Raise','Donkey Calf Raise','Single Leg Calf Raise','Leg Press Calf Raise','Smith Machine Calf Raise','Toe Walk','Jump Rope Calf Raise','Calf Press','Tibialis Raise'],
   Abs: ['Cable Crunch','Hanging Leg Raise','Reverse Crunch','Russian Twist','Dead Bug','Ab Wheel Rollout','Bicycle Crunch','Mountain Climber','Side Plank','Pallof Press'],
   Cardio: ['Treadmill Walk','Treadmill Run','Stationary Bike','Elliptical','Rowing Machine','Stair Climber','Jump Rope','Air Bike','Swimming','Walking'],
-  FullBody: ['Burpee','Kettlebell Clean','Kettlebell Snatch','Dumbbell Thruster','Man Maker','Battle Rope','Bear Crawl','Turkish Get Up','Medicine Ball Slam','Sled Push']
+  'Full Body': ['Burpee','Kettlebell Clean','Kettlebell Snatch','Dumbbell Thruster','Man Maker','Battle Rope','Bear Crawl','Turkish Get Up','Medicine Ball Slam','Sled Push']
 }
-
 const equipmentFor = name => {
   const n = name.toLowerCase()
   if (n.includes('cable')) return 'Cable'
@@ -416,6 +417,72 @@ const SLUG_STEP_CATEGORY = {
   'foam-rolling-quads': 'foam-roll',
   'foam-rolling-back': 'foam-roll',
 }
+
+// Maps every name used in expansionTemplates above to one of the movement
+// categories that already has real start/end demo images (see the list at
+// the top of this section). This is what actually lets `expanded` ship —
+// without an entry here a generated exercise has no category and
+// withStepImages() drops it, which is why the library sat at 159 items
+// even though `expanded` was already generating ~480 more of them.
+const NAME_STEP_CATEGORY = {
+  // Chest
+  'Machine Incline Press': 'lying-press-machine', 'Cable Crossover': 'fly', 'Low Cable Fly': 'fly',
+  'High Cable Fly': 'fly', 'Dumbbell Pullover': 'fly-db', 'Resistance Band Chest Press': 'standing-press',
+  'Single Arm Cable Press': 'standing-press', 'Plate Squeeze Press': 'standing-press',
+  'Incline Push Up': 'pushup', 'Decline Push Up': 'pushup',
+  // Back
+  'Neutral Grip Pulldown': 'pulldown', 'Straight Arm Pulldown': 'pulldown', 'Single Arm Cable Row': 'row-cable',
+  'Meadows Row': 'row', 'Seal Row': 'row', 'Inverted Row': 'row', 'Resistance Band Row': 'row',
+  'Close Grip Pulldown': 'pulldown', 'Rack Pull': 'hinge',
+  // Shoulders
+  'Arnold Press': 'overhead-press-db', 'Cable Lateral Raise': 'lateral-raise-cable',
+  'Machine Shoulder Press': 'overhead-press-machine', 'Plate Front Raise': 'front-raise',
+  'Face Pull': 'rear-delt-fly-cable', 'Reverse Pec Deck': 'rear-delt-fly-machine', 'Upright Row': 'upright-row',
+  'Lean Away Lateral Raise': 'lateral-raise', 'Rear Delt Cable Fly': 'rear-delt-fly-cable', 'Pike Push Up': 'pushup',
+  // Biceps
+  'EZ Bar Curl': 'curl-ezbar', 'Preacher Curl': 'curl', 'Spider Curl': 'curl-ezbar', 'Cable Curl': 'curl-cable',
+  'Bayesian Curl': 'curl-cable', 'Incline Curl': 'curl-db', 'Reverse Curl': 'curl',
+  'Concentration Curl': 'curl-db', 'Hammer Curl': 'curl-db', 'Drag Curl': 'curl',
+  // Triceps
+  'Rope Pushdown': 'pushdown', 'Bar Pushdown': 'pushdown', 'Overhead Cable Extension': 'triceps-ext-cable',
+  'Skull Crusher': 'triceps-ext-barbell', 'Close Grip Bench Press': 'lying-press', 'Bench Dip': 'dip',
+  'Single Arm Pushdown': 'pushdown', 'Dumbbell Kickback': 'kickback-triceps', 'JM Press': 'triceps-ext-barbell',
+  'Diamond Push Up': 'pushup',
+  // Legs
+  'Hack Squat': 'squat-machine', 'Leg Extension': 'leg-extension', 'Seated Leg Curl': 'leg-curl',
+  'Lying Leg Curl': 'leg-curl', 'Goblet Squat': 'squat-db', 'Front Squat': 'squat',
+  'Bulgarian Split Squat': 'squat-db', 'Walking Lunge': 'lunge', 'Step Up': 'step-up', 'Sissy Squat': 'sissy-squat',
+  // Glutes
+  'Hip Thrust': 'hip-thrust', 'Glute Bridge': 'hip-thrust-bw', 'Cable Kickback': 'kickback-glute',
+  'Reverse Lunge': 'lunge', 'Sumo Squat': 'squat', 'Single Leg Hip Thrust': 'hip-thrust-bw',
+  'Frog Pump': 'hip-thrust-bw', 'Curtsy Lunge': 'lunge', 'Glute Ham Raise': 'leg-curl', 'Banded Lateral Walk': 'hip-machine',
+  // Hamstrings
+  'Nordic Curl': 'leg-curl', 'Good Morning': 'hinge', 'Single Leg Romanian Deadlift': 'hinge-db',
+  'Cable Pull Through': 'hinge', 'Stability Ball Curl': 'leg-curl', 'Kettlebell Swing': 'kb-swing',
+  'Banded Leg Curl': 'leg-curl', 'Dumbbell Romanian Deadlift': 'hinge-db',
+  // Calves
+  'Standing Calf Raise': 'calf-raise', 'Seated Calf Raise': 'calf-raise', 'Donkey Calf Raise': 'calf-raise',
+  'Single Leg Calf Raise': 'calf-raise', 'Leg Press Calf Raise': 'calf-raise', 'Smith Machine Calf Raise': 'calf-raise',
+  'Toe Walk': 'calf-raise', 'Jump Rope Calf Raise': 'jump-rope', 'Calf Press': 'calf-raise', 'Tibialis Raise': 'calf-raise',
+  // Abs
+  'Cable Crunch': 'crunch-cable', 'Hanging Leg Raise': 'leg-raise', 'Reverse Crunch': 'crunch',
+  'Russian Twist': 'rotate', 'Dead Bug': 'crunch', 'Ab Wheel Rollout': 'ab-wheel', 'Bicycle Crunch': 'crunch',
+  'Mountain Climber': 'plank', 'Side Plank': 'plank', 'Pallof Press': 'rotate-cable',
+  // Cardio
+  'Treadmill Walk': 'cardio-run', 'Treadmill Run': 'cardio-run', 'Stationary Bike': 'cardio-machine',
+  'Elliptical': 'cardio-machine', 'Rowing Machine': 'cardio-machine', 'Stair Climber': 'cardio-machine',
+  'Jump Rope': 'jump-rope', 'Air Bike': 'cardio-machine', 'Swimming': 'cardio-run', 'Walking': 'cardio-run',
+  // Full body
+  'Burpee': 'burpee', 'Kettlebell Clean': 'clean-press', 'Kettlebell Snatch': 'clean-press',
+  'Dumbbell Thruster': 'thruster', 'Man Maker': 'burpee', 'Battle Rope': 'generic', 'Bear Crawl': 'generic',
+  'Turkish Get Up': 'getup', 'Medicine Ball Slam': 'generic', 'Sled Push': 'generic'
+}
+
+expanded.forEach(e => {
+  const baseName = e.name.replace(/ Variation \d+$/, '')
+  const category = NAME_STEP_CATEGORY[baseName]
+  if (category) SLUG_STEP_CATEGORY[e.slug] = category
+})
 
 const MUSCLE_DEFAULT_CATEGORY = {
   Chest: 'lying-press', Back: 'row', Shoulders: 'overhead-press', Traps: 'shrug',
