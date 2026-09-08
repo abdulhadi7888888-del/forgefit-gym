@@ -1,7 +1,33 @@
-const DATA_URL = 'https://exercise-dataset.com/exercises.json'
 const IMAGE_BASE = 'https://exercise-dataset.com/'
+const CDN_BASE = (import.meta.env.VITE_EXERCISE_MEDIA_BASE || '').replace(/\/$/, '')
 
-let catalogPromise = null
+const LOCAL_FALLBACKS = {
+  chest: ['lying-press-start.svg', 'lying-press-end.svg'],
+  push: ['pushup-start.svg', 'pushup-end.svg'],
+  pull: ['row-start.svg', 'row-end.svg'],
+  hinge: ['hinge-start.svg', 'hinge-end.svg'],
+  lower: ['squat-start.svg', 'squat-end.svg'],
+  core: ['crunch-start.svg', 'crunch-end.svg'],
+  carry: ['carry-start.svg', 'carry-end.svg'],
+  mobility: ['stretch-start.svg', 'stretch-end.svg'],
+  generic: ['generic-start.svg', 'generic-end.svg']
+}
+
+function familyFor(value) {
+  if (/push.?up|burpee|dip/.test(value)) return 'push'
+  if (/bench|press|fly|chest/.test(value)) return 'chest'
+  if (/row|pull|pulldown|lat|shrug|rear.?delt/.test(value)) return 'pull'
+  if (/deadlift|rdl|hinge|good.?morning|swing/.test(value)) return 'hinge'
+  if (/squat|lunge|leg|calf|glute|hamstring|step.?up/.test(value)) return 'lower'
+  if (/plank|crunch|sit.?up|ab|mountain/.test(value)) return 'core'
+  if (/carry|farmer|hold/.test(value)) return 'carry'
+  if (/stretch|mobility|roll/.test(value)) return 'mobility'
+  return 'generic'
+}
+
+function assetSlug({ id, name } = {}) {
+  return slugify(id || name || 'exercise')
+}
 
 function normalize(value) {
   return String(value || '')
@@ -75,63 +101,38 @@ async function loadCatalog() {
   return catalogPromise
 }
 
-export async function findExerciseMedia({ id, name } = {}) {
-  // Keep exercise coaching imagery local and offline-ready. The previous remote
-  // catalog returned cartoon diagrams and made the detail page slow to render.
-  return localMediaFor({ id, name })
-
-  /*
-  const catalog = await loadCatalog()
-  if (!catalog.length) return localMediaFor({ id, name })
-
-  const wantedId = normalize(id).replace(/ /g, '-')
-  const wantedName = normalize(name)
-  const aliasId = ID_ALIASES[wantedId]
-  const exact = (aliasId && catalog.find(e => normalize(e.id).replace(/ /g, '-') === aliasId))
-    || catalog.find(e => normalize(e.id).replace(/ /g, '-') === wantedId)
-    || catalog.find(e => normalize(e.name_en) === wantedName)
-
-  if (!exact) {
-    // Local names sometimes include a harmless descriptor that RepDB omits.
-    const aliases = [
-      String(name || '').replace(/^flat\s+/i, ''),
-      String(name || '').replace(/^standard\s+/i, ''),
-      String(name || '').replace(/^flat\s+barbell\s+/i, 'Barbell '),
-      String(name || '').replace(/^flat\s+dumbbell\s+/i, 'Dumbbell ')
-    ]
-    const aliasMatch = aliases
-      .map(normalize)
-      .map(candidate => catalog.find(e => normalize(e.name_en) === candidate))
-      .find(Boolean)
-    if (aliasMatch) return mediaFromRecord(aliasMatch)
-
-    const generated = slugify(name)
-    const bySlug = catalog.find(e => normalize(e.id).replace(/ /g, '-') === generated)
-    if (!bySlug) return localMediaFor({ id, name })
-    return mediaFromRecord(bySlug)
+export function resolveExerciseMedia({ id, name } = {}) {
+  const slug = assetSlug({ id, name })
+  const family = familyFor(`${id || ''} ${name || ''}`.toLowerCase())
+  const [startFile, endFile] = LOCAL_FALLBACKS[family]
+  const remote = CDN_BASE ? `${CDN_BASE}/${slug}` : null
+  return {
+    imageUrlStart: remote ? `${remote}/start.webp` : `/exercise-images/${startFile}`,
+    imageUrlEnd: remote ? `${remote}/finish.webp` : `/exercise-images/${endFile}`,
+    imageUrl: remote ? `${remote}/start.webp` : `/exercise-images/${startFile}`,
+    source: remote ? 'ForgeFit exercise media CDN' : 'ForgeFit local fallback',
+    mediaSlug: slug,
+    mediaFamily: family
   }
-
-  return mediaFromRecord(exact) || localMediaFor({ id, name })
 }
 
-*/
+export async function findExerciseMedia(input = {}) {
+  return resolveExerciseMedia(input)
+}
 
-function localMediaFor({ id, name } = {}) {
-  const value = `${id || ''} ${name || ''}`.toLowerCase()
-  let startFile = 'row-start-real.png'
-  let endFile = 'row-finish-real.png'
-  if (/bench|chest|fly|dip/.test(value)) { startFile = 'press-start-real.png'; endFile = 'press-finish-real.png' }
-  else if (/push.?up/.test(value)) { startFile = 'pushup-real.png'; endFile = 'pushup-real.png' }
-  else if (/shoulder|overhead|lateral|front.?raise|arnold|press/.test(value)) { startFile = 'overhead-press-real.png'; endFile = 'overhead-press-real.png' }
-  else if (/deadlift|rdl|hinge|good.?morning/.test(value)) { startFile = 'deadlift-real.png'; endFile = 'deadlift-real.png' }
-  else if (/squat|lunge|leg|calf|glute|hamstring/.test(value)) { startFile = 'squat-start-real.png'; endFile = 'squat-finish-real.png' }
-  else if (/plank|crunch|sit.?up|ab|mountain/.test(value)) { startFile = 'pushup-real.png'; endFile = 'pushup-real.png' }
+export function validateExerciseMedia(exercises = []) {
+  const slugs = exercises.map(exercise => assetSlug(exercise))
+  const duplicateSlugs = [...new Set(slugs.filter((slug, index) => slugs.indexOf(slug) !== index))]
   return {
-    imageUrlStart: `/exercise-images/${startFile}`,
-    imageUrlEnd: `/exercise-images/${endFile}`,
-    imageUrl: `/exercise-images/${file}`,
-    source: 'ForgeFit realistic gym photo'
+    total: exercises.length,
+    missing: exercises.filter(exercise => !exercise?.slug && !exercise?.name).map(exercise => exercise?.name || 'unknown'),
+    duplicateSlugs,
+    covered: duplicateSlugs.length === 0 && exercises.every(exercise => Boolean(assetSlug(exercise)))
   }
+}
+
+function localMediaFor(input = {}) {
+  return resolveExerciseMedia(input)
 }
 
 function mediaFromRecord(record) {

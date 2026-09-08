@@ -2,12 +2,12 @@ import { useRef, useState } from 'react'
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
-function StepImage({ src, alt, label }) {
+function StepImage({ src, alt, label, fallbackSrc }) {
   if (!src) return null
   return (
     <div className="exercise-step">
       <div className="exercise-visual">
-        <img src={src} alt={`${alt} — ${label.toLowerCase()}`} loading="eager" decoding="async" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/exercise-images/row-start-real.png' }} />
+        <img src={src} alt={`${alt} — ${label.toLowerCase()}`} loading="eager" decoding="async" onError={(event) => { if (event.currentTarget.src.endsWith(fallbackSrc)) return; event.currentTarget.onerror = null; event.currentTarget.src = fallbackSrc }} />
       </div>
       <p>{label}</p><small className="media-caption">REAL PHOTO · {label === 'STEP 1 · START' ? 'SETUP POSITION' : 'FINISH POSITION'}</small>
     </div>
@@ -22,8 +22,8 @@ function StepImages({ imageUrlStart, imageUrlEnd, imageUrl, alt }) {
     return (
       <section className="exercise-demo" aria-label={`${alt} demonstration`}>
         <div className="exercise-steps">
-          <StepImage src={start} alt={alt} label="STEP 1 · START" />
-          <StepImage src={end} alt={alt} label="STEP 2 · FINISH" />
+          <StepImage src={start} alt={alt} label="STEP 1 · START" fallbackSrc="/exercise-images/generic-start.svg" />
+          <StepImage src={end} alt={alt} label="STEP 2 · FINISH" fallbackSrc="/exercise-images/generic-end.svg" />
         </div>
       </section>
     )

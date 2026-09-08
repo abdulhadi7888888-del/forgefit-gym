@@ -1,3 +1,5 @@
+import { resolveExerciseMedia } from '../lib/exerciseMedia'
+
 // Exercise library seed set: 159 real, named gym exercises with hand-picked
 // step demo images, spanning every major muscle group and common equipment
 // type. Below this, `expanded` generates ~480 more exercises (mapped to the
@@ -542,7 +544,7 @@ function withStepImages(list) {
       'Keep the movement smooth and stop if sharp pain occurs.',
       'Prioritize technique before adding weight.'
     ]
-    return { ...e, instructions, safetyTips, ...stepImagePaths(category) }
+    return { ...e, instructions, safetyTips, ...resolveExerciseMedia(e), mediaCategory: category }
   }).filter(Boolean)
 }
 
