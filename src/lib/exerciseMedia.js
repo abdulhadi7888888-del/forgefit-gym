@@ -77,36 +77,44 @@ async function loadCatalog() {
 
 export async function findExerciseMedia({ id, name } = {}) {
   const catalog = await loadCatalog()
-  if (!catalog.length) return null
+  if (!catalog.length) return localMediaFor({ id, name })
 
   const wantedId = normalize(id).replace(/ /g, '-')
   const wantedName = normalize(name)
   const aliasId = ID_ALIASES[wantedId]
-  const exact = (aliasId && catalog.find(e => normalize(e.id).replace(/ /g, '-') === aliasId))
+  let exact = (aliasId && catalog.find(e => normalize(e.id).replace(/ /g, '-') === aliasId))
     || catalog.find(e => normalize(e.id).replace(/ /g, '-') === wantedId)
     || catalog.find(e => normalize(e.name_en) === wantedName)
 
   if (!exact) {
-    // Local names sometimes include a harmless descriptor that RepDB omits.
     const aliases = [
       String(name || '').replace(/^flat\s+/i, ''),
       String(name || '').replace(/^standard\s+/i, ''),
       String(name || '').replace(/^flat\s+barbell\s+/i, 'Barbell '),
       String(name || '').replace(/^flat\s+dumbbell\s+/i, 'Dumbbell ')
     ]
-    const aliasMatch = aliases
-      .map(normalize)
-      .map(candidate => catalog.find(e => normalize(e.name_en) === candidate))
-      .find(Boolean)
-    if (aliasMatch) return mediaFromRecord(aliasMatch)
-
-    const generated = slugify(name)
-    const bySlug = catalog.find(e => normalize(e.id).replace(/ /g, '-') === generated)
-    if (!bySlug) return null
-    return mediaFromRecord(bySlug)
+    exact = aliases.map(normalize).map(candidate => catalog.find(e => normalize(e.name_en) === candidate)).find(Boolean)
+      || catalog.find(e => normalize(e.id).replace(/ /g, '-') === slugify(name))
   }
+  return mediaFromRecord(exact) || localMediaFor({ id, name })
+}
 
-  return mediaFromRecord(exact)
+function localMediaFor({ id, name } = {}) {
+  const value = `${id || ''} ${name || ''}`.toLowerCase()
+  let startFile = 'row-start-real.png'
+  let endFile = 'row-finish-real.png'
+  if (/bench|chest|fly|dip/.test(value)) { startFile = 'press-start-real.png'; endFile = 'press-finish-real.png' }
+  else if (/push.?up/.test(value)) { startFile = 'pushup-real.png'; endFile = 'pushup-real.png' }
+  else if (/shoulder|overhead|lateral|front.?raise|arnold|press/.test(value)) { startFile = 'overhead-press-real.png'; endFile = 'overhead-press-real.png' }
+  else if (/deadlift|rdl|hinge|good.?morning/.test(value)) { startFile = 'deadlift-real.png'; endFile = 'deadlift-real.png' }
+  else if (/squat|lunge|leg|calf|glute|hamstring/.test(value)) { startFile = 'squat-start-real.png'; endFile = 'squat-finish-real.png' }
+  else if (/plank|crunch|sit.?up|ab|mountain/.test(value)) { startFile = 'pushup-real.png'; endFile = 'pushup-real.png' }
+  return {
+    imageUrlStart: `/exercise-images/${startFile}`,
+    imageUrlEnd: `/exercise-images/${endFile}`,
+    imageUrl: `/exercise-images/${startFile}`, 
+    source: 'ForgeFit realistic gym photo'
+  }
 }
 
 function mediaFromRecord(record) {

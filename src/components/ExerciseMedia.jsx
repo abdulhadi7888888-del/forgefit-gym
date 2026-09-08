@@ -7,9 +7,9 @@ function StepImage({ src, alt, label }) {
   return (
     <div className="exercise-step">
       <div className="exercise-visual">
-        <img src={src} alt={`${alt} — ${label.toLowerCase()}`} loading="eager" />
+        <img src={src} alt={`${alt} — ${label.toLowerCase()}`} loading="eager" decoding="async" onError={(event) => { event.currentTarget.style.opacity = '0.18' }} />
       </div>
-      <p>{label}</p>
+      <p>{label}</p><small className="media-caption">REAL PHOTO · {label === 'STEP 1 · START' ? 'SETUP POSITION' : 'FINISH POSITION'}</small>
     </div>
   )
 }

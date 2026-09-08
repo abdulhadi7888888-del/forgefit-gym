@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { exercises } from '../data/exercises'
+import { findExerciseMedia } from '../lib/exerciseMedia'
 import { useAuth } from '../context/AuthContext'
 import { collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
@@ -16,6 +17,7 @@ export default function ExerciseDetail() {
   const { user } = useAuth()
   const staticExercise = exercises.find(e => e.slug === slug)
   const [liveExercise, setLiveExercise] = useState(null)
+  const [resolvedMedia, setResolvedMedia] = useState(null)
   const [history, setHistory] = useState([])
   const [pr, setPr] = useState(null)
   const [favId, setFavId] = useState(null)
@@ -24,6 +26,8 @@ export default function ExerciseDetail() {
   const [favoriteSaving, setFavoriteSaving] = useState(false)
 
   useEffect(() => {
+    let active = true
+    findExerciseMedia({ id: slug, name: staticExercise?.name }).then(media => { if (active) setResolvedMedia(media) }).catch(() => {})
     async function load() {
       try {
         const exSnap = await getDoc(doc(db, 'exercises', slug))
@@ -47,7 +51,8 @@ export default function ExerciseDetail() {
       } catch (err) { setLoadError('Some saved data is unavailable offline.') }
     }
     if (user) load()
-  }, [user, slug])
+    return () => { active = false }
+  }, [user, slug, staticExercise?.name])
 
   async function handleFavorite() {
     if (favoriteSaving) return
@@ -63,14 +68,30 @@ export default function ExerciseDetail() {
   // overrides text, sets, or other fields.
   if (!staticExercise && !liveExercise) return <div className="app"><main><p>Exercise not found.</p></main></div>
   const exercise = { ...(staticExercise || {}), ...(liveExercise || {}) }
-  exercise.imageUrl = liveExercise?.imageUrl || staticExercise?.imageUrl || null
-  exercise.imageUrlStart = liveExercise?.imageUrlStart || staticExercise?.imageUrlStart || null
-  exercise.imageUrlEnd = liveExercise?.imageUrlEnd || staticExercise?.imageUrlEnd || null
+  exercise.imageUrl = liveExercise?.imageUrl || resolvedMedia?.imageUrl || staticExercise?.imageUrl || null
+  exercise.imageUrlStart = liveExercise?.imageUrlStart || resolvedMedia?.imageUrlStart || staticExercise?.imageUrlStart || null
+  exercise.imageUrlEnd = liveExercise?.imageUrlEnd || resolvedMedia?.imageUrlEnd || staticExercise?.imageUrlEnd || null
 
   // Instructions can arrive either as a `steps` array (custom/admin-authored
   // exercises) or an `instructions` array (older shape) — normalize to one list.
-  const instructionSteps = (exercise.steps?.length ? exercise.steps : exercise.instructions?.length ? exercise.instructions : [])
-  const tips = [...(exercise.safetyTips || []), ...(exercise.mistakes || []).map(m => `Avoid: ${m}`)]
+  const instructionSteps = (exercise.steps?.length ? exercise.steps : exercise.instructions?.length ? exercise.instructions : [
+    `Set up with your ${exercise.primaryMuscle.toLowerCase()} braced and your ${exercise.equipment.toLowerCase()} secure.`,
+    'Move through a controlled range of motion; keep the working muscle under tension.',
+    'Exhale through the effort, inhale as you return, and stop the set if your form changes.',
+    `Complete ${exercise.defaultSets} sets of ${exercise.repRange} with ${exercise.restSeconds} seconds of rest.`
+  ])
+  const specificTips = /row/i.test(exercise.name)
+    ? ['Keep your chest against the pad and pull toward your lower ribs.', 'Do not shrug or swing; pause briefly when the handles reach your body.']
+    : /bench|press/i.test(exercise.name)
+      ? ['Keep your shoulder blades set and lower the weight under control.', 'Use a spotter for heavy barbell sets and do not bounce the bar.']
+      : /squat|lunge/i.test(exercise.name)
+        ? ['Keep your whole foot planted and let your knees track over your toes.', 'Brace before each rep and stop depth if your back position changes.']
+        : ['Set your position before adding load and move through a pain-free range.', 'Use a controlled tempo; stop the set when technique changes.']
+  const tips = [...specificTips, ...(exercise.safetyTips || []), ...(exercise.mistakes || []).map(m => `Avoid: ${m}`),
+    'Choose a load that lets you own every rep.',
+    'Keep the movement smooth instead of chasing momentum.',
+    'Warm up first and use a lighter variation if anything feels painful.'
+  ]
   const maxVolume = history.length ? Math.max(...history.map(h => h.volume || h.weightKg * h.reps)) : 0
   const prChartData = pr ? [
     { label: 'Max weight (kg)', value: pr.bestWeightKg },
@@ -81,11 +102,12 @@ export default function ExerciseDetail() {
   return (
     <div className="app">
       <header>
-        <button className="secondary" onClick={() => nav(-1)}>BACK</button>
-        <button className="secondary" onClick={handleFavorite} disabled={favoriteSaving}>{favId ? 'Saved' : 'Save'}</button>
+        <button className="secondary" onClick={() => nav(-1)}>← BACK</button>
+        <button className="secondary" onClick={handleFavorite} disabled={favoriteSaving}>{favId ? 'SAVED' : 'SAVE EXERCISE'}</button>
       </header>
       <main>
-        <h1>{exercise.name}</h1>
+        <div className="eyebrow">EXERCISE GUIDE</div>
+        <div className="detail-title-row"><div><h1>{exercise.name}</h1><p className="muted">{exercise.primaryMuscle} · {exercise.equipment} · {exercise.difficulty}</p></div><span className={`difficulty difficulty-${exercise.difficulty}`}>{exercise.difficulty}</span></div>
         {loadError && <p className="error">{loadError}</p>}
 
         <ExerciseMedia
@@ -104,6 +126,8 @@ export default function ExerciseDetail() {
         </div>
 
         {tab === 'Overview' && (
+          <>
+          <div className="detail-quick-actions"><button className="primary" onClick={() => nav(`/workout?exercise=${slug}`)}>ADD TO WORKOUT</button><button className="secondary" onClick={handleFavorite}>{favId ? 'SAVED TO FAVORITES' : 'SAVE FOR LATER'}</button></div>
           <div className="card">
             <div className="row"><span className="muted">Main muscle</span><span>{exercise.primaryMuscle}</span></div>
             {exercise.secondaryMuscles?.length > 0 && (
@@ -113,6 +137,7 @@ export default function ExerciseDetail() {
             <div className="row" style={{ marginTop: 8 }}><span className="muted">Difficulty</span><span>{exercise.difficulty}</span></div>
             <div className="row" style={{ marginTop: 8 }}><span className="muted">Suggested</span><span>{exercise.defaultSets} sets × {exercise.repRange}</span></div>
             <div className="row" style={{ marginTop: 8 }}><span className="muted">Rest</span><span>{exercise.restSeconds}s</span></div>
+            <div className="coach-note"><strong>COACHING CUE</strong><span>Brace first. Control the lowering phase. Drive through the target muscle.</span></div>
             {pr && (
               <div className="row" style={{ marginTop: 8 }}>
                 <span className="muted">Personal record</span>
@@ -132,6 +157,7 @@ export default function ExerciseDetail() {
               </div>
             )}
           </div>
+          </>
         )}
 
         {tab === 'Instructions' && (

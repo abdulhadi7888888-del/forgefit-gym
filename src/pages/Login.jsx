@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   signInWithEmail, signUpWithEmail, signInWithGoogle,
-  signInWithApple, signInAsGuest, resetPassword, getAuthRedirectResult
+  signInWithApple, signInAsGuest, resetPassword, getAuthRedirectResult,
+  firebaseConfigMissing
 } from '../lib/firebase'
 
 export default function Login() {
@@ -63,8 +64,16 @@ export default function Login() {
   return (
     <div className="app">
       <main>
-        <div className="eyebrow">FORGEFIT</div>
-        <h1>{mode === 'login' ? 'Welcome back' : 'Create your account'}</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 42 }}><img src="/icon-192.png" alt="ForgeFit Gym logo" width="38" height="38" style={{ borderRadius: 11 }} /><div className="brand">FORGE<span>FIT</span> GYM</div></div>
+        <div className="eyebrow">MEMBER ACCESS</div>
+        <h1>{mode === 'login' ? 'Welcome back.' : 'Start strong.'}</h1>
+
+        {firebaseConfigMissing && (
+          <div className="card" style={{ borderColor: 'var(--danger)' }}>
+            <strong>Firebase configuration required</strong>
+            <p className="muted">The deployed app is missing its VITE_FIREBASE_* variables. Add them in Vercel project settings, then redeploy.</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="field">

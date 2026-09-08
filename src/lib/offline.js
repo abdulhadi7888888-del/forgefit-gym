@@ -8,6 +8,21 @@
 import { enableIndexedDbPersistence, waitForPendingWrites } from 'firebase/firestore'
 import { db } from './firebase'
 
+const OFFLINE_PLAN_PREFIX = 'forgefit:plan:'
+
+export function cachePlan(uid, plan) {
+  if (!uid || !plan) return
+  try { localStorage.setItem(`${OFFLINE_PLAN_PREFIX}${uid}`, JSON.stringify(plan)) } catch { /* optional cache */ }
+}
+
+export function readCachedPlan(uid) {
+  if (!uid) return null
+  try {
+    const raw = localStorage.getItem(`${OFFLINE_PLAN_PREFIX}${uid}`)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
 let persistenceEnabled = false
 
 // --- Pending-write tracking -------------------------------------------------
